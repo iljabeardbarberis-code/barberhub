@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users — read own, owner reads all
+    match /users/{uid} {
+      allow read: if request.auth.uid == uid || isOwner();
+      allow create: if request.auth.uid == uid;
+      allow update: if request.auth.uid == uid || isOwner();
+    }
+
+    // Masters — public read, owner writes
+    match /masters/{masterId} {
+      allow read: if true;
+      allow write: if isOwner() || request.auth.uid == masterId;
+    }
+
+    // Bookings — client reads own, master reads own, owner reads all
+    match /bookings/{bookingId} {
+      allow read: if isOwner()
+        || request.auth.uid == resource.data.clientUid
+        || isMasterOf(resource.data.masterId);
+      allow create: if request.auth != null;
+      allow update: if isOwner()
+        || request.auth.uid == resource.data.clientUid
+        || isMasterOf(resource.data.masterId);
+      allow delete: if isOwner() || isMasterOf(resource.data.masterId);
+    }
+
+    // Reviews — public read, authenticated write, owner delete
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if isOwner();
+    }
+
+    // Config (subs, salon schedule) — public read, owner write
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // Blocks — public read, master writes own, owner writes all
+    match /blocks/{blockId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if isOwner()
+        || (request.auth != null && resource.data.createdBy == "master"
+            && isMasterOf(resource.data.masterId));
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+
+    // Helper functions
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email == "owner@barberhub.com";
+    }
+    function isMasterOf(masterId) {
+      return request.auth != null && request.auth.uid == masterId;
+    }
+  }
+}
