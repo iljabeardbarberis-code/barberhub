@@ -1,4 +1,19 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDW8eSrkC1Qsk6-NXS3eYWjrBR4RFKvPVc",
+  authDomain: "barber-hub-6c69d.firebaseapp.com",
+  projectId: "barber-hub-6c69d",
+  storageBucket: "barber-hub-6c69d.firebasestorage.app",
+  messagingSenderId: "640750699309",
+  appId: "1:640750699309:web:4b735bb959ecb8d10349a4"
+};
+const fbApp = initializeApp(firebaseConfig);
+const fbAuth = getAuth(fbApp);
+const fbDb = getFirestore(fbApp);
 
 // ── OWNER ACCOUNT ─────────────────────────────────────────────────────────────
 const OWNER = { name:"Владелец", email:"owner@barberhub.com", password:"owner2024", role:"owner" };
@@ -1330,8 +1345,47 @@ export default function App() {
 
   const [masters, setMasters] = useState(INIT_MASTERS);
   const [subs, setSubs] = useState(INIT_SUBS);
-  const [users, setUsers] = useState([{ name:"Демо Клиент", email:"demo@hub.com", phone:"+370 600 11111", password:"demo", role:"client", sub:null }]);
+  const [users, setUsers] = useState([]);
   const [cur, setCur] = useState(null);
+  const [fbLoading, setFbLoading] = useState(true);
+
+  // ── Firebase Auth — restore session on reload ───────────────────────────
+  useEffect(()=>{
+    const unsub = onAuthStateChanged(fbAuth, async (firebaseUser)=>{
+      if(firebaseUser){
+        // Check if owner
+        if(firebaseUser.email===OWNER.email){ setCur({...OWNER}); setFbLoading(false); return; }
+        // Check masters
+        const masterSnap = await getDoc(doc(fbDb,"masters",firebaseUser.uid));
+        if(masterSnap.exists()){
+          setCur({...masterSnap.data(), uid:firebaseUser.uid});
+          setFbLoading(false); return;
+        }
+        // Check clients
+        const userSnap = await getDoc(doc(fbDb,"users",firebaseUser.uid));
+        if(userSnap.exists()){
+          setCur({...userSnap.data(), uid:firebaseUser.uid});
+        } else {
+          // Fallback — basic user from Firebase Auth
+          setCur({ name:firebaseUser.displayName||firebaseUser.email, email:firebaseUser.email, role:"client", sub:null, uid:firebaseUser.uid });
+        }
+      } else {
+        setCur(null);
+      }
+      setFbLoading(false);
+    });
+    return ()=>unsub();
+  },[]);
+
+  // ── Firebase Bookings — real-time sync ─────────────────────────────────
+  useEffect(()=>{
+    const q = query(collection(fbDb,"bookings"), orderBy("date"), orderBy("time"));
+    const unsub = onSnapshot(q, snap=>{
+      const firestoreBookings = snap.docs.map(d=>({...d.data(), id:d.id}));
+      if(firestoreBookings.length > 0) setBookings(firestoreBookings);
+    }, ()=>{}); // ignore errors (offline/rules)
+    return ()=>unsub();
+  },[]);
   const [modal, setModal] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"" });
@@ -1610,7 +1664,7 @@ export default function App() {
       const nu={...authForm,role:"client",sub:null};setUsers(p=>[...p,nu]);setCur(nu);setModal(null);
     }
   };
-  const logout=()=>{setCur(null);setPage("home");};
+  const logout=async()=>{try{await signOut(fbAuth);}catch(e){}setCur(null);setPage("home");};
   const goBook=()=>{if(!cur){openAuth("login");return;}setBkDone(false);setPage("book");};
   const activateSub=(sid)=>{
     if(!cur){openAuth("login");return;}
@@ -1631,13 +1685,21 @@ export default function App() {
       }
       useSubVisit(cur.email,cur.sub);
     }
-    setBookings(p=>[...p,{
-      id:Date.now(), masterId:master,
+    const newBooking = {
+      masterId:master,
       clientName:cur.name, clientPhone:cur.phone||"", clientEmail:cur.email,
-      serviceIds:services,
-      serviceId:services[0],
-      date, time, notes:"", status:"confirmed", payment
-    }]);
+      clientUid:cur.uid||"",
+      serviceIds:services, serviceId:services[0],
+      date, time, notes:"", status:"confirmed", payment,
+      createdAt:new Date().toISOString()
+    };
+    try{
+      const ref = await addDoc(collection(fbDb,"bookings"),newBooking);
+      setBookings(p=>[...p,{...newBooking,id:ref.id}]);
+    }catch(e){
+      // Offline fallback
+      setBookings(p=>[...p,{...newBooking,id:"local_"+Date.now()}]);
+    }
     setBkDone(true);
     const selM=masters.find(m=>m.id===master);
     const svcNames = bk.services.map(sid=>{const sv=(selM?.services||[]).find(s=>s.id===sid);return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";}).filter(Boolean).join(" + ");
