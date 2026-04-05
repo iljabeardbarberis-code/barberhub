@@ -18,40 +18,7 @@ const fbDb = getFirestore(fbApp);
 // ── OWNER ACCOUNT ─────────────────────────────────────────────────────────────
 const OWNER = { name:"Владелец", email:"owner@barberhub.com", password:"owner2024", role:"owner" };
 
-const INIT_MASTERS = [
-  { id:"1", email:"master1@hub.com", password:"master1", firstName:"Алексей", lastName:"Волков",
-    role_ru:"Классика & Fade", role_lt:"Klasika & Fade", photo:"", emoji:"✂️", color:"#e8650a",
-    phone:"+370 611 11111", about_ru:"Мастер классической стрижки и фейда. 8 лет опыта.", about_lt:"Klasikinio kirpimo meistras. 8 metų patirtis.",
-    experience:"8", instagram:"@alexey_cuts", workStart:"09:00", workEnd:"20:00",
-    discount:{ enabled:true, percent:20, label_ru:"Скидка на первую стрижку!", label_lt:"Nuolaida pirmam kirpimui!", expires:"2025-12-31" },
-    services:[
-      { id:"s1_1", name_ru:"Классическая стрижка", name_lt:"Klasikinis kirpimas", price:25, mins:45, cleanup:10, enabled:true },
-      { id:"s1_2", name_ru:"Стрижка + борода",     name_lt:"Kirpimas + barzda",   price:40, mins:75, cleanup:15, enabled:true },
-      { id:"s1_5", name_ru:"Fade / Тейп",          name_lt:"Fade / Taper",         price:28, mins:50, cleanup:10, enabled:true },
-      { id:"s1_4", name_ru:"Детская стрижка",      name_lt:"Vaikiškas kirpimas",   price:18, mins:30, cleanup:10, enabled:true },
-    ]},
-  { id:"2", email:"master2@hub.com", password:"master2", firstName:"Дмитрий", lastName:"Соколов",
-    role_ru:"Борода & Бритьё", role_lt:"Barzda & Skutimasis", photo:"", emoji:"🪒", color:"#1fba7a",
-    phone:"+370 622 22222", about_ru:"Специалист по бороде. Каждый клиент уходит с идеальной формой.", about_lt:"Barzdos specialistas. Kiekvienas klientas išeina idealiai.",
-    experience:"5", instagram:"@dmitry_barber", workStart:"10:00", workEnd:"19:00",
-    discount:{ enabled:false, percent:15, label_ru:"", label_lt:"", expires:"" },
-    services:[
-      { id:"s2_1", name_ru:"Классическая стрижка",  name_lt:"Klasikinis kirpimas",    price:25, mins:45, cleanup:10, enabled:true },
-      { id:"s2_2", name_ru:"Стрижка + борода",      name_lt:"Kirpimas + barzda",      price:42, mins:80, cleanup:15, enabled:true },
-      { id:"s2_3", name_ru:"Королевское бритьё",   name_lt:"Karališkasis skutimasis", price:32, mins:60, cleanup:15, enabled:true },
-    ]},
-  { id:"3", email:"master3@hub.com", password:"master3", firstName:"Максим", lastName:"Орлов",
-    role_ru:"Окрашивание & Стайлинг", role_lt:"Dažymas & Stilizavimas", photo:"", emoji:"🎨", color:"#c47cf5",
-    phone:"+370 633 33333", about_ru:"Колорист и стилист. Мелирование, тонирование, современные техники.", about_lt:"Koloristas ir stilistas. Modernios dažymo technikos.",
-    experience:"6", instagram:"@maxim_style", workStart:"09:30", workEnd:"19:30",
-    discount:{ enabled:false, percent:10, label_ru:"", label_lt:"", expires:"" },
-    services:[
-      { id:"s3_1",  name_ru:"Классическая стрижка",   name_lt:"Klasikinis kirpimas",      price:25, mins:45,  cleanup:10, enabled:true },
-      { id:"s3_6",  name_ru:"Окрашивание",             name_lt:"Dažymas",                  price:60, mins:90,  cleanup:20, enabled:true },
-      { id:"s3_6b", name_ru:"Мелирование",             name_lt:"Melyracija",               price:75, mins:110, cleanup:20, enabled:true },
-      { id:"s3_7",  name_ru:"Тонирование + стрижка",   name_lt:"Tonizavimas + kirpimas",   price:80, mins:100, cleanup:20, enabled:true },
-    ]},
-];
+const INIT_MASTERS = [];
 
 const SERVICES_RU = [
   { id:1, name:"Классическая стрижка", price:25, mins:45 },
@@ -1357,7 +1324,16 @@ export default function App() {
   const t = T[lang];
   const SERVICES = lang==="ru" ? SERVICES_RU : SERVICES_LT;
 
-  const [masters, setMasters] = useState(INIT_MASTERS);
+  const [masters, setMasters] = useState([]);
+
+  // ── Load masters from Firestore ─────────────────────────────────────────
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"masters"), snap=>{
+      const firestoreMasters = snap.docs.map(d=>({...d.data(), id:d.id}));
+      if(firestoreMasters.length > 0) setMasters(firestoreMasters);
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
   const [subs, setSubs] = useState(INIT_SUBS);
   const [users, setUsers] = useState([]);
   const [cur, setCur] = useState(null);
@@ -1437,15 +1413,8 @@ export default function App() {
   const [authErr, setAuthErr] = useState("");
   const [page, setPage] = useState("home");
   const [navOpen, setNavOpen] = useState(false);
-  const [bookings, setBookings] = useState([
-    { id:10, masterId:"1", clientName:"Иван Петров",    clientPhone:"+370 655 11111", serviceId:"s1_1", date:todayStr, time:"10:00", notes:"", status:"confirmed" },
-    { id:11, masterId:"1", clientName:"Артём Козлов",   clientPhone:"+370 655 22222", serviceId:"s1_2", date:todayStr, time:"11:30", notes:"бороду покороче", status:"confirmed" },
-    { id:12, masterId:"2", clientName:"Виктор Смирнов", clientPhone:"+370 655 33333", serviceId:"s2_3", date:todayStr, time:"12:00", notes:"", status:"done" },
-    { id:13, masterId:"1", clientName:"Дмитрий Орлов",  clientPhone:"+370 655 44444", serviceId:"s1_5", date:fmtDate(new Date(Date.now()+86400000)), time:"14:00", notes:"", status:"confirmed" },
-    { id:14, masterId:"2", clientName:"Сергей Новак",   clientPhone:"+370 655 55555", serviceId:"s2_1", date:fmtDate(new Date(Date.now()+86400000)), time:"10:00", notes:"", status:"confirmed" },
-    { id:15, masterId:"3", clientName:"Алина Морозова", clientPhone:"+370 655 66666", serviceId:"s3_6b", date:todayStr, time:"13:00", notes:"мелирование", status:"confirmed" },
-  ]);
-  const [reviews, setReviews] = useState(DEMO_REVIEWS);
+  const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ masterId:"", rating:5, text:"" });
   const [reviewDone, setReviewDone] = useState(false);
   // Post-visit popup
@@ -1479,18 +1448,22 @@ export default function App() {
   const [ownerFormOpen, setOwnerFormOpen] = useState(false);
   const [ownerFormErr, setOwnerFormErr] = useState("");
 
-  const handleMasterSave = (form) => {
+  const handleMasterSave = async (form) => {
     if(ownerMasterEdit){
-      setMasters(p=>p.map(m=>m.id===ownerMasterEdit ? {...m,...form} : m));
+      const updated = {...masters.find(m=>m.id===ownerMasterEdit), ...form};
+      setMasters(p=>p.map(m=>m.id===ownerMasterEdit ? updated : m));
+      try{ await setDoc(doc(fbDb,"masters",ownerMasterEdit), updated); }catch(e){}
     } else {
-      const newId="master_"+Date.now();
-      setMasters(p=>[...p,{
+      const newId = "master_"+Date.now();
+      const newMaster = {
         ...form, id:newId, role:"master",
         photo:"", phone:"", about_ru:"", about_lt:"",
         experience:"", instagram:"",
         workStart:"09:00", workEnd:"20:00",
         services:[{id:"s_"+Date.now(), name_ru:"Классическая стрижка", name_lt:"Klasikinis kirpimas", price:25, mins:45, cleanup:10, enabled:true}]
-      }]);
+      };
+      setMasters(p=>[...p, newMaster]);
+      try{ await setDoc(doc(fbDb,"masters",newId), newMaster); }catch(e){}
     }
     setOwnerMasterEdit(null);
     setOwnerFormOpen(false);
@@ -1520,11 +1493,7 @@ export default function App() {
   });
 
   // Notifications
-  const [notifications, setNotifications] = useState([
-    { id:1, masterId:"1", forOwner:true, type:"booked", text:"Иван Петров записался к Алексею · 10:00", time:"10:30", read:false },
-    { id:2, masterId:"1", forOwner:true, type:"block_added", text:"Алексей добавил перерыв 13:00–14:00", time:"09:15", read:false },
-    { id:3, masterId:"2", forOwner:true, type:"booked", text:"Виктор Смирнов записался к Дмитрию · 12:00", time:"08:50", read:false },
-  ]);
+  const [notifications, setNotifications] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
 
   // ── Load notifications from Firestore ──────────────────────────────────────
@@ -1724,10 +1693,9 @@ export default function App() {
         try{ localStorage.setItem("barberhub_owner","true"); }catch(e){}
         setCur({...OWNER});setModal(null);setPage("owner");return;
       }
-      // Мастер — локальная проверка по паролю
+      // Мастер — поиск по email и паролю в Firestore masters
       const m=masters.find(m=>m.email===authForm.email&&m.password===authForm.password);
       if(m){
-        try{ await signInWithEmailAndPassword(fbAuth,authForm.email,authForm.password); }catch(e){}
         const masterData = {name:m.firstName,email:m.email,role:"master",sub:null,uid:String(m.id),id:String(m.id)};
         try{ localStorage.setItem("barberhub_master", JSON.stringify(masterData)); }catch(e){}
         setCur(masterData);
@@ -1936,11 +1904,10 @@ export default function App() {
   };
 
   // Owner: delete master
-  const ownerDeleteMaster = (id) => {
+  const ownerDeleteMaster = async (id) => {
     if(!window.confirm(t.owner_confirm_delete)) return;
     setMasters(p=>p.filter(m=>m.id!==id));
-    setBookings(p=>p.filter(b=>b.masterId!==id));
-    setReviews(p=>p.filter(r=>r.masterId!==id));
+    try{ await deleteDoc(doc(fbDb,"masters",id)); }catch(e){}
   };
 
   // Owner: open edit form
