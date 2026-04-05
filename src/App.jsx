@@ -1353,6 +1353,7 @@ export default function App() {
   const [visitTipPaid, setVisitTipPaid] = useState(false);
   const [pendingVisitReview, setPendingVisitReview] = useState(null);
   const [carouselIdx, setCarouselIdx] = useState(0);
+  const carouselTouchStart = useRef(0);
   const [bk, setBk] = useState({ services:[], master:null, date:null, time:null, payment:null });
   const [bkDone, setBkDone] = useState(false);
   const [calView, setCalView] = useState("week");
@@ -1780,8 +1781,8 @@ export default function App() {
         <nav className="nav">
           <div className="logo" onClick={()=>{setPage("home");setNavOpen(false);}}><b>BARBER</b> HUB</div>
           {/* Burger button — only visible on mobile via CSS */}
-          <button className="nav-burger" onClick={()=>setNavOpen(p=>!p)}>☰</button>
-          <div className={`nav-mid nav-links${navOpen?" open":""}`} onClick={()=>setNavOpen(false)}>
+          <button className="nav-burger" onClick={e=>{e.stopPropagation();setNavOpen(p=>!p);}}>☰</button>
+          <div className={`nav-mid nav-links${navOpen?" open":""}`} onClick={e=>{e.stopPropagation();setNavOpen(false);}}>
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>setPage("home")}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.services}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("msts")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.masters}</button>
@@ -1847,6 +1848,7 @@ export default function App() {
             )}
           </div>
         </nav>
+        {navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>}
 
         {/* HOME */}
         {page==="home"&&<>
@@ -2002,12 +2004,19 @@ export default function App() {
               const maxIdx = Math.max(0, topRevs.length - perPage);
               const goTo = (idx) => setCarouselIdx(Math.max(0, Math.min(idx, maxIdx)));
               const cardPct = 100 / perPage;
+              const isMobile = window.innerWidth < 600;
               return(
-                <div style={{position:"relative",padding:window.innerWidth<600?"0 32px":"0 44px"}}>
+                <div style={{position:"relative",padding:isMobile?"0 28px":"0 44px"}}>
                   {/* Prev */}
                   <button className="carousel-btn prev" onClick={()=>goTo(carouselIdx-1)} style={{opacity:carouselIdx===0?.3:1}}>‹</button>
                   {/* Track */}
-                  <div className="carousel" style={{overflow:"hidden"}}>
+                  <div className="carousel" style={{overflow:"hidden"}}
+                    onTouchStart={e=>{carouselTouchStart.current=e.touches[0].clientX;}}
+                    onTouchEnd={e=>{
+                      const diff=carouselTouchStart.current-e.changedTouches[0].clientX;
+                      if(Math.abs(diff)>40){diff>0?goTo(carouselIdx+1):goTo(carouselIdx-1);}
+                    }}
+                  >
                     <div className="carousel-track" style={{transform:`translateX(-${carouselIdx*(cardPct)}%)`, width:`${(topRevs.length/perPage)*100}%`}}>
                       {topRevs.map(r=>(
                         <div key={r.id} className="carousel-slide" style={{width:`${cardPct/topRevs.length*perPage}%`}}>
