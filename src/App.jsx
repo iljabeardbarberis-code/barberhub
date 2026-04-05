@@ -1875,13 +1875,25 @@ export default function App() {
       }
     }
   };
-  const deleteAppt=(id)=>{
+  const deleteAppt=async(id)=>{
     const b=bookings.find(x=>x.id===id);
-    if(b) addNotification("cancelled",
+    if(!b) return;
+    const cancelledBy = masterObj?.firstName || (isOwner ? "Владелец" : "");
+    // Mark as cancelled in Firestore instead of deleting
+    try{
+      await updateDoc(doc(fbDb,"bookings",id),{
+        status:"cancelled",
+        cancelledBy,
+        cancelledAt: new Date().toISOString()
+      });
+    }catch(e){}
+    setBookings(p=>p.map(x=>x.id===id?{...x,status:"cancelled",cancelledBy}:x));
+    setModal(null);
+    setDetailAppt(null);
+    addNotification("cancelled",
       `${lang==="ru"?"Запись отменена":"Rezervacija atšaukta"}: ${b.clientName} · ${b.date} ${b.time}`,
       b.masterId, true
     );
-    setBookings(p=>p.filter(b=>b.id!==id));setModal(null);setDetailAppt(null);
   };
 
   // Reschedule a booking to new date+time
@@ -2586,14 +2598,21 @@ export default function App() {
             {cur?.sub&&<div style={{marginBottom:18,padding:"9px 14px",background:"var(--grd)",border:"1px solid var(--gr)",borderRadius:8,fontSize:12,color:"var(--gr)",fontWeight:700}}>{t.sub_my}: {cur.sub.toUpperCase()} — {t.sub_active}</div>}
             {myBookings.length===0?<p style={{color:"var(--mu)",fontSize:14,marginBottom:22}}>{t.my_empty}</p>
             :myBookings.map(b=>{
-              const s=resolveBooking(b),m=masters.find(x=>x.id===b.masterId);
+              const s=resolveBooking(b),m=masters.find(x=>String(x.id)===String(b.masterId));
+              const isCancelled = b.status==="cancelled";
+              const isDone = b.status==="done";
               return(
-                <div key={b.id} className="bk-item">
-                  <div>
-                    <div className="bk-svc">{s?.name||"—"}</div>
+                <div key={b.id} className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
+                  <div style={{flex:1}}>
+                    <div className="bk-svc" style={{textDecoration:isCancelled?"line-through":"none"}}>{s?.name||"—"}</div>
                     <div className="bk-meta">{m?.firstName} {m?.lastName} · {b.date} · {b.time}{b.payment?" · "+(b.payment==="cash"?"💵":"💳"):""}</div>
+                    {isCancelled&&<div style={{fontSize:11,color:"var(--red)",marginTop:3,fontWeight:700}}>
+                      ❌ {lang==="ru"?"Отменено":"Atšaukta"}{b.cancelledBy?` · ${b.cancelledBy}`:""}
+                    </div>}
                   </div>
-                  <span className={`badge ${b.status==="done"?"bgr":"bor"}`}>{t.confirmed}</span>
+                  <span className={`badge ${isDone?"bgr":isCancelled?"b-red":"bor"}`} style={isCancelled?{background:"var(--red)",color:"#fff"}:{}}>
+                    {isDone?(lang==="ru"?"Выполнено":"Atlikta"):isCancelled?(lang==="ru"?"Отменено":"Atšaukta"):t.confirmed}
+                  </span>
                 </div>
               );
             })}
