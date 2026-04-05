@@ -1524,7 +1524,13 @@ export default function App() {
   };
 
   const isOwner = cur?.role === "owner";
-  const masterObj = cur?.role==="master" ? masters.find(m=>m.email===cur.email) : null;
+  const masterObj = cur?.role==="master" 
+    ? (masters.find(m=>m.email===cur.email) || (cur.id ? {
+        id:cur.id, email:cur.email, firstName:cur.name, lastName:"",
+        color:"#e8650a", emoji:"✂️", services:[], workStart:"09:00", workEnd:"20:00",
+        role:"master"
+      } : null))
+    : null;
   const weekDates = getWeekDates(weekAnchor);
 
   // Уведомления для текущего пользователя
@@ -1591,8 +1597,8 @@ export default function App() {
   };
 
   const myBookings = masterObj
-    ? bookings.filter(b=>String(b.masterId)===String(masterObj.id))
-    : bookings.filter(b=>b.clientEmail===cur?.email);
+    ? bookings.filter(b=>String(b.masterId)===String(masterObj?.id||cur?.id))
+    : bookings.filter(b=>b.clientEmail===cur?.email || (cur?.uid && b.clientUid===cur.uid));
 
   const masterClients = useMemo(()=>{
     if(!masterObj) return [];
@@ -1696,7 +1702,7 @@ export default function App() {
       // Мастер — поиск по email и паролю в Firestore masters
       const m=masters.find(m=>m.email===authForm.email&&m.password===authForm.password);
       if(m){
-        const masterData = {name:m.firstName,email:m.email,role:"master",sub:null,uid:String(m.id),id:String(m.id)};
+        const masterData = {...m, name:m.firstName, role:"master", sub:null, uid:String(m.id), id:String(m.id)};
         try{ localStorage.setItem("barberhub_master", JSON.stringify(masterData)); }catch(e){}
         setCur(masterData);
         setModal(null);return;
