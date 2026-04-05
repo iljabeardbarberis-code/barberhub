@@ -2853,13 +2853,15 @@ export default function App() {
               {/* Handle */}
               <div style={{width:36,height:4,background:"var(--border)",borderRadius:2,margin:"14px auto 0"}}/>
               {/* Header */}
-              <div style={{display:"flex",alignItems:"center",padding:"12px 16px",borderBottom:"1px solid var(--border)",gap:8}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,flex:1,minWidth:0}}>
-                  🔔 {t.notif_title}
-                  {unreadCount>0&&<span style={{fontSize:11,background:"var(--red)",color:"#fff",padding:"2px 8px",borderRadius:20,fontWeight:800,marginLeft:8}}>{unreadCount}</span>}
+              <div style={{padding:"12px 16px",borderBottom:"1px solid var(--border)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:unreadCount>0?8:0}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>
+                    🔔 {t.notif_title}
+                    {unreadCount>0&&<span style={{fontSize:11,background:"var(--red)",color:"#fff",padding:"2px 7px",borderRadius:20,fontWeight:800,marginLeft:8}}>{unreadCount}</span>}
+                  </div>
+                  <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:22,lineHeight:1,padding:"0 4px"}} onClick={()=>setShowNotifs(false)}>✕</button>
                 </div>
-                {unreadCount>0&&<button className="btn b-card b-sm" onClick={markAllRead} style={{fontSize:10,flexShrink:0,whiteSpace:"nowrap"}}>{t.notif_mark_read}</button>}
-                <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:22,lineHeight:1,flexShrink:0,padding:"0 4px"}} onClick={()=>setShowNotifs(false)}>✕</button>
+                {unreadCount>0&&<button className="btn b-card b-sm" onClick={markAllRead} style={{fontSize:11,width:"100%"}}>{t.notif_mark_read}</button>}
               </div>
               {/* List */}
               <div style={{overflowY:"auto",flex:1,padding:"8px 0"}}>
