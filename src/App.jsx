@@ -494,7 +494,9 @@ const CSS = `
 body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:15px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(14,10,6,.97);backdrop-filter:blur(16px);gap:10px;}
 .nav-links{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;flex-wrap:wrap;}
-.nav-burger{display:none;background:none;border:none;color:var(--wh);font-size:22px;cursor:pointer;padding:4px 8px;}
+.nav-burger{display:none;background:none;border:none;color:var(--wh);font-size:26px;cursor:pointer;padding:6px 10px;line-height:1;}
+.drawer-overlay{display:none;}
+.drawer{display:none;}
 .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;cursor:pointer;flex-shrink:0;}
 .logo b{color:var(--or);}
 .nav-mid{display:flex;gap:2px;flex:1;justify-content:center;flex-wrap:wrap;}
@@ -770,9 +772,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .nav{padding:0 12px;height:50px;flex-wrap:nowrap;overflow:hidden;}
   .nav-logo{font-size:16px;letter-spacing:2px;}
   .nav-links{display:none!important;}
-  .nav-links.open{display:flex!important;flex-direction:column;position:fixed;top:50px;left:0;right:0;background:var(--dark);padding:16px;gap:8px;z-index:200;border-bottom:1px solid var(--border);}
-  .nl{font-size:13px;padding:10px 14px;width:100%;text-align:left;}
   .nav-burger{display:flex!important;}
+  .drawer-overlay{display:block!important;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;}
+  .drawer{display:flex!important;flex-direction:column;position:fixed;top:0;right:0;bottom:0;width:75vw;max-width:280px;background:var(--dark);z-index:301;padding:24px 16px;gap:6px;border-left:1px solid var(--border);animation:slideInRight .25s ease;}
+  @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  .drawer .nl{font-size:15px;padding:14px 16px;width:100%;text-align:left;border-radius:10px;}
+  .drawer .nl:hover,.drawer .nl.on{background:var(--card);color:var(--or);}
+  .drawer-close{background:none;border:none;color:var(--mu);font-size:22px;cursor:pointer;align-self:flex-end;margin-bottom:8px;}
   .hero{padding:44px 16px 36px;}
   .htitle{font-size:48px;line-height:.92;}
   .hsub{font-size:13px;}
@@ -1781,8 +1787,8 @@ export default function App() {
         <nav className="nav">
           <div className="logo" onClick={()=>{setPage("home");setNavOpen(false);}}><b>BARBER</b> HUB</div>
           {/* Burger button — only visible on mobile via CSS */}
-          <button className="nav-burger" onClick={e=>{e.stopPropagation();setNavOpen(p=>!p);}}>☰</button>
-          <div className={`nav-mid nav-links${navOpen?" open":""}`} onClick={e=>{e.stopPropagation();setNavOpen(false);}}>
+          <button className="nav-burger" onClick={()=>setNavOpen(true)}>☰</button>
+          <div className="nav-mid nav-links">
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>setPage("home")}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.services}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("msts")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.masters}</button>
@@ -1848,7 +1854,23 @@ export default function App() {
             )}
           </div>
         </nav>
-        {navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>}
+        {/* MOBILE DRAWER */}
+        {navOpen&&<>
+          <div className="drawer-overlay" onClick={()=>setNavOpen(false)}/>
+          <div className="drawer">
+            <button className="drawer-close" onClick={()=>setNavOpen(false)}>✕</button>
+            <button className={`nl${page==="home"?" on":""}`} onClick={()=>{setPage("home");setNavOpen(false);}}>{t.home}</button>
+            <button className="nl" onClick={()=>{setPage("home");setNavOpen(false);setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),100);}}>{t.services}</button>
+            <button className="nl" onClick={()=>{setPage("home");setNavOpen(false);setTimeout(()=>document.getElementById("msts")?.scrollIntoView({behavior:"smooth"}),100);}}>{t.masters}</button>
+            <button className={`nl${page==="sub"?" on":""}`} onClick={()=>{setPage("sub");setNavOpen(false);}}>{t.subscription}</button>
+            {cur&&!masterObj&&!isOwner&&<button className={`nl${page==="my"?" on":""}`} onClick={()=>{setPage("my");setNavOpen(false);}}>{t.my_bookings}</button>}
+            {masterObj&&<button className={`nl${page==="master"?" on":""}`} onClick={()=>{setPage("master");setNavOpen(false);}}>{t.master_cab}</button>}
+            {isOwner&&<button className={`nl${page==="owner"?" on":""}`} style={{color:"var(--gold)"}} onClick={()=>{setPage("owner");setNavOpen(false);}}>👑 {t.owner_panel}</button>}
+            {!cur&&<><button className="btn b-ghost" style={{marginTop:8}} onClick={()=>{openAuth("login");setNavOpen(false);}}>{t.login}</button>
+            <button className="btn b-or" style={{marginTop:6}} onClick={()=>{openAuth("register");setNavOpen(false);}}>{t.register}</button></>}
+          </div>
+        </>}
+
 
         {/* HOME */}
         {page==="home"&&<>
@@ -1999,54 +2021,39 @@ export default function App() {
                 .sort((a,b)=>b.rating-a.rating||new Date(b.date)-new Date(a.date))
                 .slice(0,8);
               if(!topRevs.length) return null;
-              // 1 card on mobile, 3 on desktop
-              const perPage = window.innerWidth < 600 ? 1 : 3;
-              const maxIdx = Math.max(0, topRevs.length - perPage);
-              const goTo = (idx) => setCarouselIdx(Math.max(0, Math.min(idx, maxIdx)));
-              const cardPct = 100 / perPage;
-              const isMobile = window.innerWidth < 600;
               return(
-                <div style={{position:"relative",padding:isMobile?"0 28px":"0 44px"}}>
-                  {/* Prev */}
-                  <button className="carousel-btn prev" onClick={()=>goTo(carouselIdx-1)} style={{opacity:carouselIdx===0?.3:1}}>‹</button>
-                  {/* Track */}
-                  <div className="carousel" style={{overflow:"hidden"}}
-                    onTouchStart={e=>{carouselTouchStart.current=e.touches[0].clientX;}}
-                    onTouchEnd={e=>{
-                      const diff=carouselTouchStart.current-e.changedTouches[0].clientX;
-                      if(Math.abs(diff)>40){diff>0?goTo(carouselIdx+1):goTo(carouselIdx-1);}
-                    }}
-                  >
-                    <div className="carousel-track" style={{transform:`translateX(-${carouselIdx*(cardPct)}%)`, width:`${(topRevs.length/perPage)*100}%`}}>
-                      {topRevs.map(r=>(
-                        <div key={r.id} className="carousel-slide" style={{width:`${cardPct/topRevs.length*perPage}%`}}>
-                          <div className="rev-card" style={{borderColor:r.master.color+"33",height:"100%"}}>
-                            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:r.master.color,borderRadius:"12px 12px 0 0"}}/>
-                            <div className="rev-top">
-                              <div className="rev-avatar" style={{background:r.master.color+"22",color:r.master.color}}>{r.clientName[0]}</div>
-                              <div>
-                                <div className="rev-author">{r.clientName}</div>
-                                <div className="rev-meta">{new Date(r.date).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"long"})}</div>
-                              </div>
-                            </div>
-                            <StarRow rating={r.rating} size={14}/>
-                            <div className="rev-text">"{r.text}"</div>
-                            <div className="rev-mbadge" style={{background:r.master.color+"18",color:r.master.color}}>
-                              {r.master.emoji} {r.master.firstName} {r.master.lastName}
-                            </div>
+                <div style={{
+                  display:"flex",
+                  gap:14,
+                  overflowX:"auto",
+                  scrollSnapType:"x mandatory",
+                  WebkitOverflowScrolling:"touch",
+                  paddingBottom:12,
+                  scrollbarWidth:"none",
+                  msOverflowStyle:"none",
+                }}>
+                  {topRevs.map(r=>(
+                    <div key={r.id} style={{
+                      flex:"0 0 min(300px, 82vw)",
+                      scrollSnapAlign:"start",
+                    }}>
+                      <div className="rev-card" style={{borderColor:r.master.color+"33",height:"100%"}}>
+                        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:r.master.color,borderRadius:"12px 12px 0 0"}}/>
+                        <div className="rev-top">
+                          <div className="rev-avatar" style={{background:r.master.color+"22",color:r.master.color}}>{r.clientName[0]}</div>
+                          <div>
+                            <div className="rev-author">{r.clientName}</div>
+                            <div className="rev-meta">{new Date(r.date).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"long"})}</div>
                           </div>
                         </div>
-                      ))}
+                        <StarRow rating={r.rating} size={14}/>
+                        <div className="rev-text">"{r.text}"</div>
+                        <div className="rev-mbadge" style={{background:r.master.color+"18",color:r.master.color}}>
+                          {r.master.emoji} {r.master.firstName} {r.master.lastName}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  {/* Next */}
-                  <button className="carousel-btn next" onClick={()=>goTo(carouselIdx+1)} style={{opacity:carouselIdx>=maxIdx?.3:1}}>›</button>
-                  {/* Dots */}
-                  <div className="carousel-dots">
-                    {Array.from({length:maxIdx+1}).map((_,i)=>(
-                      <button key={i} className={`carousel-dot${carouselIdx===i?" on":""}`} onClick={()=>goTo(i)}/>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               );
             })()}
