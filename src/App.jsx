@@ -886,7 +886,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .notif-bell{position:relative;background:none;border:none;cursor:pointer;padding:6px;font-size:18px;transition:transform .18s;}
 .notif-bell:hover{transform:scale(1.15);}
 .notif-dot{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--bg);}
-.notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-height:420px;background:var(--dark);border:1px solid var(--b2);border-radius:14px;z-index:300;overflow:hidden;animation:slideUp .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+.notif-panel{position:fixed;top:56px;right:8px;width:min(340px,95vw);max-height:420px;background:var(--dark);border:1px solid var(--b2);border-radius:14px;z-index:400;overflow:hidden;animation:slideUp .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.6);}
 .notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
 .notif-head-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;}
 .notif-list{overflow-y:auto;max-height:340px;}
@@ -948,7 +948,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .master-mgmt-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;transition:border-color .18s;overflow:hidden;}
 .master-mgmt-card:hover{border-color:var(--b2);}
 /* Owner mobile bubble */
-.owner-bubble{display:none;position:fixed;bottom:24px;right:20px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(245,158,11,.4);align-items:center;justify-content:center;transition:transform .2s;}
+.owner-bubble{display:none!important;}
 .owner-bubble:hover{transform:scale(1.1);}
 .owner-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:201;}
 .owner-drawer-menu{position:fixed;bottom:0;left:0;right:0;background:var(--dark);border-radius:20px 20px 0 0;z-index:202;padding:16px;border-top:1px solid var(--border);animation:slideUp .25s ease;}
@@ -1934,8 +1934,8 @@ export default function App() {
         {/* NAV */}
         <nav className="nav">
           <div className="logo" onClick={()=>{setPage("home");setNavOpen(false);}}><b>BARBER</b> HUB</div>
-          {/* Burger button — only visible on mobile via CSS */}
-          <button className="nav-burger" onClick={()=>setNavOpen(true)}>☰</button>
+          {/* Burger button — opens owner drawer for owner, nav drawer for others */}
+          <button className="nav-burger" onClick={()=>isOwner ? setOwnerDrawerOpen(true) : setNavOpen(true)}>☰</button>
           <div className="nav-mid nav-links">
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>setPage("home")}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.services}</button>
@@ -1958,8 +1958,8 @@ export default function App() {
                 </div>
                 {!masterObj&&!isOwner&&<button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>}
                 {(masterObj||isOwner)&&(
-                  <div style={{position:"relative"}}>
-                    <button className="notif-bell" onClick={()=>setShowNotifs(p=>!p)} title={t.notif_title}>
+                  <div style={{position:"relative",zIndex:150}}>
+                    <button className="notif-bell" onClick={e=>{e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
                       🔔{unreadCount>0&&<div className="notif-dot"/>}
                     </button>
                     {showNotifs&&(
