@@ -596,6 +596,21 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .ms-icon{font-size:14px;width:18px;text-align:center;}
 .ms-badge{margin-left:auto;background:var(--or);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
 .mcon{flex:1;overflow:auto;display:flex;flex-direction:column;min-width:0;}
+.master-widget-btn{display:none;position:fixed;bottom:24px;left:20px;z-index:200;
+  background:var(--or);color:var(--bg);border:none;border-radius:24px;
+  padding:10px 18px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;
+  cursor:pointer;box-shadow:0 4px 16px rgba(232,101,10,.4);align-items:center;gap:8px;
+  transition:transform .2s;}
+.master-widget-btn:hover{transform:scale(1.05);}
+.master-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:201;}
+.master-drawer{position:fixed;bottom:0;left:0;right:0;background:var(--dark);
+  border-radius:20px 20px 0 0;z-index:202;padding:16px;
+  border-top:1px solid var(--border);animation:slideUp .25s ease;}
+.master-drawer-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px;}
+.master-drawer-profile{display:flex;align-items:center;gap:12px;padding:8px 0 14px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.master-drawer-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;
+  cursor:pointer;border:none;background:none;color:var(--wh);
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:700;width:100%;text-align:left;}
 .cal-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:var(--dark);}
 .cal-hd-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;}
 .cal-nav{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
@@ -784,8 +799,9 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .sumbox{padding:14px;margin-top:16px;}
   .pay-options{grid-template-columns:1fr;}
   .mcab{flex-direction:column;}
-  .mtabs{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border);width:100%;padding:6px;gap:3px;min-height:unset;}
-  .mtab{padding:7px 10px;font-size:11px;white-space:nowrap;}
+  .msb{display:none!important;}
+  .master-widget-btn{display:flex!important;}
+  .master-drawer-overlay{display:block!important;}
   .mcon{padding:12px;}
   .cal-hd{padding:8px 10px;gap:6px;flex-wrap:wrap;}
   .cal-hd-title{font-size:13px;}
@@ -1456,6 +1472,18 @@ export default function App() {
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [mTab, setMTab] = useState("calendar");
+  const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
+  const [widgetBtnVisible, setWidgetBtnVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  useEffect(()=>{
+    const onScroll = () => {
+      const current = window.scrollY;
+      setWidgetBtnVisible(current <= lastScrollY.current || current < 50);
+      lastScrollY.current = current;
+    };
+    window.addEventListener("scroll", onScroll, {passive:true});
+    return ()=>window.removeEventListener("scroll", onScroll);
+  },[]);
   const [newAppt, setNewAppt] = useState({ clientMode:"new", clientName:"", clientPhone:"", serviceIds:[], date:todayStr, time:"10:00", notes:"" });
   const [detailAppt, setDetailAppt] = useState(null);
   const [dragId, setDragId] = useState(null);           // id of booking being dragged
@@ -2631,6 +2659,50 @@ export default function App() {
         {page==="master"&&masterObj&&(()=>{
           return(
             <div className="mcab">
+              {/* MOBILE WIDGET BUTTON */}
+              <button className="master-widget-btn"
+                style={{opacity:widgetBtnVisible?1:0,transform:widgetBtnVisible?"scale(1)":"scale(0.8)",pointerEvents:widgetBtnVisible?"auto":"none",transition:"all .3s"}}
+                onClick={()=>setMasterDrawerOpen(true)}>
+                ☰ {lang==="ru"?"Виджеты":"Valdikliai"}
+              </button>
+
+              {/* MOBILE MASTER DRAWER */}
+              {masterDrawerOpen&&(
+                <>
+                  <div className="master-drawer-overlay" onClick={()=>setMasterDrawerOpen(false)}/>
+                  <div className="master-drawer">
+                    <div className="master-drawer-handle"/>
+                    <div className="master-drawer-profile">
+                      <div style={{width:44,height:44,borderRadius:"50%",background:mc+"22",border:`2px solid ${mc}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                        {masterObj.photo?<img src={masterObj.photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:masterObj.emoji}
+                      </div>
+                      <div>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1}}>{masterObj.firstName}</div>
+                        <div style={{fontSize:11,color:mc}}>{lang==="ru"?masterObj.role_ru:masterObj.role_lt}</div>
+                      </div>
+                    </div>
+                    {[
+                      {key:"calendar",icon:"📅",label:lang==="ru"?"Расписание":"Tvarkaraštis"},
+                      {key:"clients", icon:"👥",label:t.clients_tab,badge:masterClients.length||null},
+                      {key:"stats",   icon:"📊",label:t.stats_tab},
+                      {key:"reviews", icon:"⭐",label:t.reviews_tab},
+                      {key:"settings",icon:"⚙️",label:t.settings_tab},
+                    ].map(item=>(
+                      <button key={item.key} className="master-drawer-item"
+                        style={{background:mTab===item.key?mc+"18":"none",color:mTab===item.key?mc:"var(--wh)"}}
+                        onClick={()=>{setMTab(item.key);setMasterDrawerOpen(false);}}>
+                        <span style={{fontSize:18}}>{item.icon}</span>
+                        <span style={{flex:1}}>{item.label}</span>
+                        {item.badge!=null&&<span style={{background:mc,color:"var(--bg)",fontSize:10,fontWeight:800,padding:"1px 7px",borderRadius:9}}>{item.badge}</span>}
+                      </button>
+                    ))}
+                    <button className="btn b-full" style={{background:mc,color:"var(--bg)",marginTop:8,fontWeight:800}}
+                      onClick={()=>{openNewAppt(null);setMasterDrawerOpen(false);}}>
+                      {t.new_appt}
+                    </button>
+                  </div>
+                </>
+              )}
               {/* SIDEBAR */}
               <div className="msb">
                 <div className="msp">
