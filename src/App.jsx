@@ -1420,8 +1420,15 @@ export default function App() {
     const q = query(collection(fbDb,"bookings"), orderBy("date"), orderBy("time"));
     const unsub = onSnapshot(q, snap=>{
       const firestoreBookings = snap.docs.map(d=>({...d.data(), id:d.id}));
-      if(firestoreBookings.length > 0) setBookings(firestoreBookings);
-    }, ()=>{}); // ignore errors (offline/rules)
+      if(firestoreBookings.length > 0){
+        // Merge: keep demo bookings that start with number id, add all Firestore bookings
+        setBookings(prev=>{
+          const demoOnly = prev.filter(b=>typeof b.id === "number");
+          const merged = [...demoOnly, ...firestoreBookings];
+          return merged;
+        });
+      }
+    }, ()=>{});
     return ()=>unsub();
   },[]);
   const [modal, setModal] = useState(null);
@@ -1793,12 +1800,15 @@ export default function App() {
       date, time, notes:"", status:"confirmed", payment,
       createdAt:new Date().toISOString()
     };
+    // Add to local state immediately so master sees it right away
+    const tempId = "temp_"+Date.now();
+    setBookings(p=>[...p,{...newBooking,id:tempId}]);
     try{
       const ref = await addDoc(collection(fbDb,"bookings"),newBooking);
-      setBookings(p=>[...p,{...newBooking,id:ref.id}]);
+      // Replace temp with real Firestore id
+      setBookings(p=>p.map(b=>b.id===tempId?{...b,id:ref.id}:b));
     }catch(e){
-      // Offline fallback
-      setBookings(p=>[...p,{...newBooking,id:"local_"+Date.now()}]);
+      // Keep temp booking on error
     }
     setBkDone(true);
     const selM=masters.find(m=>String(m.id)===String(master));
