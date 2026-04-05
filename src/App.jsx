@@ -2888,28 +2888,28 @@ export default function App() {
                         <button className="btn b-sm" style={{background:"var(--card2)",color:"var(--gold)",border:"1px solid var(--gold)"}} onClick={()=>{setBlockForm({date:fmtDate(weekDates[0]),fromTime:"13:00",toTime:"14:00",allDay:false,type:"break",reason:""});setBlockModal(true);}}>🚫 {t.block_add}</button>
                     </div>
                     {masterClients.length===0?<div className="no-appts">{t.no_appts}</div>:(
-                      <table className="ct">
-                        <thead><tr>
-                          <th>{lang==="ru"?"Клиент":"Klientas"}</th>
-                          <th>{lang==="ru"?"Телефон":"Tel."}</th>
-                          <th>{lang==="ru"?"Визитов":"Vizitai"}</th>
-                          <th>{lang==="ru"?"Последний":"Paskutinis"}</th>
-                          <th>{lang==="ru"?"Сумма":"Suma"}</th>
-                          <th></th>
-                        </tr></thead>
-                        <tbody>
-                          {masterClients.sort((a,b)=>b.visits-a.visits).map((c,i)=>(
-                            <tr key={i}>
-                              <td><div className="crow"><div className="cav" style={{background:mc+"22",color:mc}}>{c.name[0]}</div>{c.name}</div></td>
-                              <td style={{color:"var(--mu2)"}}>{c.phone||"—"}</td>
-                              <td><span className="badge bor" style={{background:mc+"20",color:mc}}>{c.visits}</span></td>
-                              <td style={{color:"var(--mu2)"}}>{c.lastDate?new Date(c.lastDate).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"}):"—"}</td>
-                              <td style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:mc}}>{c.total}€</td>
-                              <td><button className="btn b-card b-sm" onClick={()=>{setNewAppt(p=>({...p,clientName:c.name,clientPhone:c.phone||"",clientMode:"existing",date:todayStr,time:"10:00",serviceIds:[],notes:""}));setModal("newAppt");}}>{t.new_appt}</button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                        {masterClients.sort((a,b)=>b.visits-a.visits).map((c,i)=>(
+                          <div key={i} style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                            <div style={{width:42,height:42,borderRadius:"50%",background:mc+"22",color:mc,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:18,flexShrink:0}}>
+                              {c.name[0]}
+                            </div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontWeight:700,fontSize:14,marginBottom:2}}>{c.name}</div>
+                              <div style={{fontSize:12,color:"var(--mu2)",marginBottom:4}}>{c.phone||"—"}</div>
+                              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                                <span style={{fontSize:11,color:mc}}>📅 {c.visits} {lang==="ru"?"визитов":"vizitų"}</span>
+                                <span style={{fontSize:11,color:"var(--gr)"}}>💰 {c.total}€</span>
+                                {c.lastDate&&<span style={{fontSize:11,color:"var(--mu2)"}}>🕐 {new Date(c.lastDate).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})}</span>}
+                              </div>
+                            </div>
+                            <button className="btn b-card b-sm" style={{flexShrink:0,fontSize:11}}
+                              onClick={()=>{setNewAppt(p=>({...p,clientName:c.name,clientPhone:c.phone||"",clientMode:"existing",date:todayStr,time:"10:00",serviceIds:[],notes:""}));setModal("newAppt");}}>
+                              + {lang==="ru"?"Запись":"Įrašas"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
