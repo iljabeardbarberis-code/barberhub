@@ -19,7 +19,7 @@ const fbDb = getFirestore(fbApp);
 const OWNER = { name:"Владелец", email:"owner@barberhub.com", password:"owner2024", role:"owner" };
 
 const INIT_MASTERS = [
-  { id:1, email:"master1@hub.com", password:"master1", firstName:"Алексей", lastName:"Волков",
+  { id:"1", email:"master1@hub.com", password:"master1", firstName:"Алексей", lastName:"Волков",
     role_ru:"Классика & Fade", role_lt:"Klasika & Fade", photo:"", emoji:"✂️", color:"#e8650a",
     phone:"+370 611 11111", about_ru:"Мастер классической стрижки и фейда. 8 лет опыта.", about_lt:"Klasikinio kirpimo meistras. 8 metų patirtis.",
     experience:"8", instagram:"@alexey_cuts", workStart:"09:00", workEnd:"20:00",
@@ -30,7 +30,7 @@ const INIT_MASTERS = [
       { id:"s1_5", name_ru:"Fade / Тейп",          name_lt:"Fade / Taper",         price:28, mins:50, cleanup:10, enabled:true },
       { id:"s1_4", name_ru:"Детская стрижка",      name_lt:"Vaikiškas kirpimas",   price:18, mins:30, cleanup:10, enabled:true },
     ]},
-  { id:2, email:"master2@hub.com", password:"master2", firstName:"Дмитрий", lastName:"Соколов",
+  { id:"2", email:"master2@hub.com", password:"master2", firstName:"Дмитрий", lastName:"Соколов",
     role_ru:"Борода & Бритьё", role_lt:"Barzda & Skutimasis", photo:"", emoji:"🪒", color:"#1fba7a",
     phone:"+370 622 22222", about_ru:"Специалист по бороде. Каждый клиент уходит с идеальной формой.", about_lt:"Barzdos specialistas. Kiekvienas klientas išeina idealiai.",
     experience:"5", instagram:"@dmitry_barber", workStart:"10:00", workEnd:"19:00",
@@ -40,7 +40,7 @@ const INIT_MASTERS = [
       { id:"s2_2", name_ru:"Стрижка + борода",      name_lt:"Kirpimas + barzda",      price:42, mins:80, cleanup:15, enabled:true },
       { id:"s2_3", name_ru:"Королевское бритьё",   name_lt:"Karališkasis skutimasis", price:32, mins:60, cleanup:15, enabled:true },
     ]},
-  { id:3, email:"master3@hub.com", password:"master3", firstName:"Максим", lastName:"Орлов",
+  { id:"3", email:"master3@hub.com", password:"master3", firstName:"Максим", lastName:"Орлов",
     role_ru:"Окрашивание & Стайлинг", role_lt:"Dažymas & Stilizavimas", photo:"", emoji:"🎨", color:"#c47cf5",
     phone:"+370 633 33333", about_ru:"Колорист и стилист. Мелирование, тонирование, современные техники.", about_lt:"Koloristas ir stilistas. Modernios dažymo technikos.",
     experience:"6", instagram:"@maxim_style", workStart:"09:30", workEnd:"19:30",
@@ -95,16 +95,16 @@ const HOURS = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","
 const THEME_COLORS = ["#e8650a","#1fba7a","#c47cf5","#3b82f6","#ef4444","#f59e0b","#ec4899","#14b8a6","#f97316","#84cc16"];
 
 const DEMO_REVIEWS = [
-  { id:1, masterId:1, clientName:"Иван П.",   rating:5, text:"Алексей — просто волшебник! Идеальный фейд, чёткие линии. Лучшая стрижка в городе!", date:"2024-03-15" },
-  { id:2, masterId:1, clientName:"Андрей К.", rating:5, text:"Профессионализм на высшем уровне. Сделал именно то что я просил. Рекомендую!", date:"2024-03-20" },
-  { id:3, masterId:1, clientName:"Сергей М.", rating:4, text:"Хорошая работа, быстро и аккуратно. Атмосфера отличная.", date:"2024-03-28" },
-  { id:4, masterId:1, clientName:"Томас Л.",  rating:2, text:"Пришлось долго ждать, стрижка средняя.", date:"2024-03-05" },
-  { id:5, masterId:2, clientName:"Виктор Н.", rating:5, text:"Дмитрий — мастер своего дела! Борода выглядит потрясающе. Королевское бритьё — нечто особенное.", date:"2024-03-10" },
-  { id:6, masterId:2, clientName:"Олег С.",   rating:5, text:"Пришёл впервые — остался очень доволен. Горячее полотенце, точный контур бороды.", date:"2024-03-22" },
-  { id:7, masterId:2, clientName:"Максим Т.", rating:4, text:"Дмитрий знает своё дело. Стрижка держится хорошо, борода аккуратно.", date:"2024-04-01" },
-  { id:8, masterId:3, clientName:"Алина М.",  rating:5, text:"Максим — невероятный колорист! Мелирование получилось именно так как хотела!", date:"2024-03-18" },
-  { id:9, masterId:3, clientName:"Катя В.",   rating:5, text:"Наконец нашла своего мастера! Тонирование и стрижка — результат превзошёл ожидания.", date:"2024-03-25" },
-  { id:10, masterId:3, clientName:"Рита К.",  rating:3, text:"Нормально, но не более того. Цвет немного не тот что хотела.", date:"2024-03-12" },
+  { id:1, masterId:"1", clientName:"Иван П.",   rating:5, text:"Алексей — просто волшебник! Идеальный фейд, чёткие линии. Лучшая стрижка в городе!", date:"2024-03-15" },
+  { id:2, masterId:"1", clientName:"Андрей К.", rating:5, text:"Профессионализм на высшем уровне. Сделал именно то что я просил. Рекомендую!", date:"2024-03-20" },
+  { id:3, masterId:"1", clientName:"Сергей М.", rating:4, text:"Хорошая работа, быстро и аккуратно. Атмосфера отличная.", date:"2024-03-28" },
+  { id:4, masterId:"1", clientName:"Томас Л.",  rating:2, text:"Пришлось долго ждать, стрижка средняя.", date:"2024-03-05" },
+  { id:5, masterId:"2", clientName:"Виктор Н.", rating:5, text:"Дмитрий — мастер своего дела! Борода выглядит потрясающе. Королевское бритьё — нечто особенное.", date:"2024-03-10" },
+  { id:6, masterId:"2", clientName:"Олег С.",   rating:5, text:"Пришёл впервые — остался очень доволен. Горячее полотенце, точный контур бороды.", date:"2024-03-22" },
+  { id:7, masterId:"2", clientName:"Максим Т.", rating:4, text:"Дмитрий знает своё дело. Стрижка держится хорошо, борода аккуратно.", date:"2024-04-01" },
+  { id:8, masterId:"3", clientName:"Алина М.",  rating:5, text:"Максим — невероятный колорист! Мелирование получилось именно так как хотела!", date:"2024-03-18" },
+  { id:9, masterId:"3", clientName:"Катя В.",   rating:5, text:"Наконец нашла своего мастера! Тонирование и стрижка — результат превзошёл ожидания.", date:"2024-03-25" },
+  { id:10, masterId:"3", clientName:"Рита К.",  rating:3, text:"Нормально, но не более того. Цвет немного не тот что хотела.", date:"2024-03-12" },
 ];
 
 const T = {
@@ -1431,12 +1431,12 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [navOpen, setNavOpen] = useState(false);
   const [bookings, setBookings] = useState([
-    { id:10, masterId:1, clientName:"Иван Петров",    clientPhone:"+370 655 11111", serviceId:"s1_1", date:todayStr, time:"10:00", notes:"", status:"confirmed" },
-    { id:11, masterId:1, clientName:"Артём Козлов",   clientPhone:"+370 655 22222", serviceId:"s1_2", date:todayStr, time:"11:30", notes:"бороду покороче", status:"confirmed" },
-    { id:12, masterId:2, clientName:"Виктор Смирнов", clientPhone:"+370 655 33333", serviceId:"s2_3", date:todayStr, time:"12:00", notes:"", status:"done" },
-    { id:13, masterId:1, clientName:"Дмитрий Орлов",  clientPhone:"+370 655 44444", serviceId:"s1_5", date:fmtDate(new Date(Date.now()+86400000)), time:"14:00", notes:"", status:"confirmed" },
-    { id:14, masterId:2, clientName:"Сергей Новак",   clientPhone:"+370 655 55555", serviceId:"s2_1", date:fmtDate(new Date(Date.now()+86400000)), time:"10:00", notes:"", status:"confirmed" },
-    { id:15, masterId:3, clientName:"Алина Морозова", clientPhone:"+370 655 66666", serviceId:"s3_6b", date:todayStr, time:"13:00", notes:"мелирование", status:"confirmed" },
+    { id:10, masterId:"1", clientName:"Иван Петров",    clientPhone:"+370 655 11111", serviceId:"s1_1", date:todayStr, time:"10:00", notes:"", status:"confirmed" },
+    { id:11, masterId:"1", clientName:"Артём Козлов",   clientPhone:"+370 655 22222", serviceId:"s1_2", date:todayStr, time:"11:30", notes:"бороду покороче", status:"confirmed" },
+    { id:12, masterId:"2", clientName:"Виктор Смирнов", clientPhone:"+370 655 33333", serviceId:"s2_3", date:todayStr, time:"12:00", notes:"", status:"done" },
+    { id:13, masterId:"1", clientName:"Дмитрий Орлов",  clientPhone:"+370 655 44444", serviceId:"s1_5", date:fmtDate(new Date(Date.now()+86400000)), time:"14:00", notes:"", status:"confirmed" },
+    { id:14, masterId:"2", clientName:"Сергей Новак",   clientPhone:"+370 655 55555", serviceId:"s2_1", date:fmtDate(new Date(Date.now()+86400000)), time:"10:00", notes:"", status:"confirmed" },
+    { id:15, masterId:"3", clientName:"Алина Морозова", clientPhone:"+370 655 66666", serviceId:"s3_6b", date:todayStr, time:"13:00", notes:"мелирование", status:"confirmed" },
   ]);
   const [reviews, setReviews] = useState(DEMO_REVIEWS);
   const [reviewForm, setReviewForm] = useState({ masterId:"", rating:5, text:"" });
@@ -1500,7 +1500,7 @@ export default function App() {
 
   // Schedule blocks: { id, masterId (null=salon), date, fromTime, toTime, allDay, type, reason, createdBy }
   const [blocks, setBlocks] = useState([
-    { id:"bl1", masterId:1, date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"Обед", createdBy:"master" },
+    { id:"bl1", masterId:"1", date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"Обед", createdBy:"master" },
   ]);
 
   // Salon-wide schedule: work days, hours, vacation dates
@@ -1513,20 +1513,37 @@ export default function App() {
 
   // Notifications
   const [notifications, setNotifications] = useState([
-    { id:1, masterId:1, forOwner:true, type:"booked", text:"Иван Петров записался к Алексею · 10:00", time:"10:30", read:false },
-    { id:2, masterId:1, forOwner:true, type:"block_added", text:"Алексей добавил перерыв 13:00–14:00", time:"09:15", read:false },
-    { id:3, masterId:2, forOwner:true, type:"booked", text:"Виктор Смирнов записался к Дмитрию · 12:00", time:"08:50", read:false },
+    { id:1, masterId:"1", forOwner:true, type:"booked", text:"Иван Петров записался к Алексею · 10:00", time:"10:30", read:false },
+    { id:2, masterId:"1", forOwner:true, type:"block_added", text:"Алексей добавил перерыв 13:00–14:00", time:"09:15", read:false },
+    { id:3, masterId:"2", forOwner:true, type:"booked", text:"Виктор Смирнов записался к Дмитрию · 12:00", time:"08:50", read:false },
   ]);
   const [showNotifs, setShowNotifs] = useState(false);
+
+  // ── Load notifications from Firestore ──────────────────────────────────────
+  useEffect(()=>{
+    const q = query(collection(fbDb,"notifications"), orderBy("createdAt","desc"));
+    const unsub = onSnapshot(q, snap=>{
+      const firestoreNotifs = snap.docs.map(d=>({...d.data(),id:d.id}));
+      if(firestoreNotifs.length>0) setNotifications(firestoreNotifs);
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
+
   const [blockModal, setBlockModal] = useState(false);
   const [blockForm, setBlockForm] = useState({ date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"" });
   const [vacForm, setVacForm] = useState({ dateFrom:todayStr, dateTo:todayStr, reason:"" });
 
   // masterId — кому из мастеров адресовано, forOwner — виден ли владельцу
-  const addNotification = (type, text, masterId=null, forOwner=true) => {
+  const addNotification = async (type, text, masterId=null, forOwner=true) => {
     const now = new Date();
     const time = now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
-    setNotifications(p=>[{id:Date.now(),masterId,forOwner,type,text,time,read:false},...p].slice(0,100));
+    const notif = {masterId:masterId?String(masterId):null, forOwner, type, text, time, read:false, createdAt:new Date().toISOString()};
+    try{
+      await addDoc(collection(fbDb,"notifications"), notif);
+    } catch(e){
+      // Offline fallback
+      setNotifications(p=>[{...notif,id:Date.now()},...p].slice(0,100));
+    }
   };
 
   const isOwner = cur?.role === "owner";
@@ -1536,15 +1553,26 @@ export default function App() {
   // Уведомления для текущего пользователя
   const myNotifications = notifications.filter(n => {
     if(isOwner) return n.forOwner;
-    if(masterObj) return n.masterId===masterObj.id;
+    if(masterObj) return String(n.masterId)===String(masterObj.id);
     return false;
   });
   const unreadCount = myNotifications.filter(n=>!n.read).length;
-  const markAllRead = () => setNotifications(p=>p.map(n=>{
-    if(isOwner && n.forOwner) return {...n,read:true};
-    if(masterObj && n.masterId===masterObj.id) return {...n,read:true};
-    return n;
-  }));
+  const markAllRead = async () => {
+    const toMark = notifications.filter(n=>{
+      if(isOwner && n.forOwner && !n.read) return true;
+      if(masterObj && String(n.masterId)===String(masterObj.id) && !n.read) return true;
+      return false;
+    });
+    setNotifications(p=>p.map(n=>{
+      if(isOwner && n.forOwner) return {...n,read:true};
+      if(masterObj && String(n.masterId)===String(masterObj.id)) return {...n,read:true};
+      return n;
+    }));
+    // Update in Firestore
+    toMark.forEach(n=>{
+      try{ updateDoc(doc(fbDb,"notifications",String(n.id)),{read:true}); }catch(e){}
+    });
+  };
 
   // Check if a date/time is blocked (salon vacation or master/salon block)
   const isDateSalonClosed = (dateStr) => {
@@ -1586,13 +1614,13 @@ export default function App() {
   };
 
   const myBookings = masterObj
-    ? bookings.filter(b=>b.masterId===masterObj.id)
+    ? bookings.filter(b=>String(b.masterId)===String(masterObj.id))
     : bookings.filter(b=>b.clientEmail===cur?.email);
 
   const masterClients = useMemo(()=>{
     if(!masterObj) return [];
     const map={};
-    bookings.filter(b=>b.masterId===masterObj.id).forEach(b=>{
+    bookings.filter(b=>String(b.masterId)===String(masterObj.id)).forEach(b=>{
       if(!map[b.clientName]) map[b.clientName]={name:b.clientName,phone:b.clientPhone,visits:0,lastDate:"",total:0};
       map[b.clientName].visits++;
       const s=resolveBooking(b);
@@ -1604,7 +1632,7 @@ export default function App() {
 
   const statsFor = (filter) => {
     if(!masterObj) return {appts:0,rev:0};
-    const bs=bookings.filter(b=>b.masterId===masterObj.id&&filter(b));
+    const bs=bookings.filter(b=>String(b.masterId)===String(masterObj.id)&&filter(b));
     return {appts:bs.length, rev:bs.reduce((a,b)=>{return a+resolveBooking(b).price;},0)};
   };
   const statsToday = useMemo(()=>statsFor(b=>b.date===todayStr),[bookings,masterObj,masters]);
@@ -1637,7 +1665,7 @@ export default function App() {
     const slotStart = timeToMins(slotTime);
     const dur = ids.length ? totalDuration(masterId, ids) : 30;
     const slotEnd = slotStart + dur;
-    for (const b of bookings.filter(x=>x.masterId===masterId&&x.date===date&&x.status!=="cancelled"&&x.id!==excludeId)) {
+    for (const b of bookings.filter(x=>String(x.masterId)===String(masterId)&&x.date===date&&x.status!=="cancelled"&&x.id!==excludeId)) {
       const bStart=timeToMins(b.time);
       const bIds=Array.isArray(b.serviceIds)?b.serviceIds:(b.serviceId?[b.serviceId]:[]);
       const bDur=bIds.length?totalDuration(masterId,bIds):30;
@@ -1649,12 +1677,12 @@ export default function App() {
 
   // reviews helpers
   const getMasterRating = (masterId) => {
-    const rs=reviews.filter(r=>r.masterId===masterId);
+    const rs=reviews.filter(r=>String(r.masterId)===String(masterId));
     if(!rs.length) return {avg:0,count:0};
     return {avg:Math.round(rs.reduce((a,r)=>a+r.rating,0)/rs.length*10)/10, count:rs.length};
   };
   const getTopReviews = (masterId) =>
-    reviews.filter(r => r.masterId===masterId && r.rating>=4 && r.showPublic!==false && r.text)
+    reviews.filter(r => String(r.masterId)===String(masterId) && r.rating>=4 && r.showPublic!==false && r.text)
            .sort((a,b)=>b.rating-a.rating);
 
   const submitReview = () => {
@@ -1692,7 +1720,7 @@ export default function App() {
       const m=masters.find(m=>m.email===authForm.email&&m.password===authForm.password);
       if(m){
         try{ await signInWithEmailAndPassword(fbAuth,authForm.email,authForm.password); }catch(e){}
-        const masterData = {name:m.firstName,email:m.email,role:"master",sub:null,uid:m.id};
+        const masterData = {name:m.firstName,email:m.email,role:"master",sub:null,uid:String(m.id),id:String(m.id)};
         try{ localStorage.setItem("barberhub_master", JSON.stringify(masterData)); }catch(e){}
         setCur(masterData);
         setModal(null);return;
@@ -1758,7 +1786,7 @@ export default function App() {
       useSubVisit(cur.email,cur.sub);
     }
     const newBooking = {
-      masterId:master,
+      masterId:String(master),
       clientName:cur.name, clientPhone:cur.phone||"", clientEmail:cur.email,
       clientUid:cur.uid||"",
       serviceIds:services, serviceId:services[0],
@@ -1773,7 +1801,7 @@ export default function App() {
       setBookings(p=>[...p,{...newBooking,id:"local_"+Date.now()}]);
     }
     setBkDone(true);
-    const selM=masters.find(m=>m.id===master);
+    const selM=masters.find(m=>String(m.id)===String(master));
     const svcNames = bk.services.map(sid=>{const sv=(selM?.services||[]).find(s=>s.id===sid);return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";}).filter(Boolean).join(" + ");
     addNotification("booked",
       `${cur.name} ${lang==="ru"?"записался":"užregistravo"} · ${date} ${time} · ${svcNames}`,
@@ -2250,8 +2278,8 @@ export default function App() {
               {masters.map(m=>{
                 const fullName=`${m.firstName} ${m.lastName}`.trim();
                 return(
-                  <div key={m.id} className={`m-card${bk.master===m.id?" sel":""}`}
-                    style={bk.master===m.id?{borderColor:m.color,borderWidth:2}:{}}
+                  <div key={m.id} className={`m-card${String(bk.master)===String(m.id)?" sel":""}`}
+                    style={String(bk.master)===String(m.id)?{borderColor:m.color,borderWidth:2}:{}}
                     onClick={()=>setBk(b=>({...b,master:m.id,services:[],time:null}))}>
                     <div className="m-av" style={{background:m.color+"22",borderColor:m.color}}>
                       {m.photo?<img src={m.photo} alt={fullName} onError={e=>e.target.style.display="none"}/>:<span>{m.emoji}</span>}
@@ -2266,7 +2294,7 @@ export default function App() {
 
             {/* STEP 1: Multi-service selection */}
             {bk.master&&(()=>{
-              const m=masters.find(x=>x.id===bk.master);
+              const m=masters.find(x=>String(x.id)===String(bk.master));
               const avail=(m?.services||[]).filter(s=>s.enabled);
               const selIds=bk.services||[];
               const ttlMins=selIds.reduce((s,sid)=>{const sv=avail.find(x=>x.id===sid);return s+(sv?(Number(sv.mins)+Number(sv.cleanup||0)):0);},0);
@@ -2326,7 +2354,7 @@ export default function App() {
             {bk.date&&bk.master&&bk.services.length>0&&<>
               <div className="stag" style={{margin:"18px 0 8px"}}>{t.step4}</div>
               {(()=>{
-                const m=masters.find(x=>x.id===bk.master);
+                const m=masters.find(x=>String(x.id)===String(bk.master));
                 const dur=totalDuration(bk.master,bk.services);
                 return(<div style={{fontSize:11,color:"var(--mu2)",marginBottom:10,padding:"8px 12px",background:"var(--card)",borderRadius:8,borderLeft:`3px solid ${m?.color||"var(--or)"}`}}>
                   ⏱ {lang==="ru"?"Блок времени":"Laiko blokas"}: <strong style={{color:m?.color||"var(--or)"}}>{dur} {t.min}</strong>
@@ -2342,7 +2370,7 @@ export default function App() {
                 {HOURS.map(h=>{
                   const status=getSlotStatus(bk.master,bk.date,h,bk.services);
                   const busy=status==="busy";
-                  const selM=masters.find(x=>x.id===bk.master);
+                  const selM=masters.find(x=>String(x.id)===String(bk.master));
                   const hm=timeToMins(h);
                   const closed=selM?.workStart&&selM?.workEnd?(hm<timeToMins(selM.workStart)||hm>=timeToMins(selM.workEnd)):false;
                   if(closed) return <div key={h} className="tbt closed" title={t.slot_closed}>{h}</div>;
@@ -2564,7 +2592,7 @@ export default function App() {
                   {key:"calendar",icon:"📅",label:lang==="ru"?"Расписание":"Tvarkaraštis",badge:statsToday.appts||null},
                   {key:"clients", icon:"👥",label:t.clients_tab,badge:masterClients.length||null},
                   {key:"stats",   icon:"📊",label:t.stats_tab},
-                  {key:"reviews", icon:"⭐",label:t.reviews_tab,badge:reviews.filter(r=>r.masterId===masterObj.id).length||null},
+                  {key:"reviews", icon:"⭐",label:t.reviews_tab,badge:reviews.filter(r=>String(r.masterId)===String(masterObj.id)).length||null},
                   {key:"settings",icon:"⚙️",label:t.settings_tab},
                 ].map(item=>(
                   <button key={item.key} className={`ms-link${mTab===item.key?" on":""}`}
@@ -2635,7 +2663,7 @@ export default function App() {
                                   );
                                 })}
                                 {/* Schedule blocks */}
-                                {blocks.filter(b=>b.date===ds&&(b.masterId===null||b.masterId===masterObj.id)).map(blk=>{
+                                {blocks.filter(b=>b.date===ds&&(b.masterId===null||String(b.masterId)===String(masterObj.id))).map(blk=>{
                                   const fromH=slotTop(blk.allDay?"09:00":blk.fromTime);
                                   const toH=blk.allDay?HOURS.length*52:slotTop(blk.toTime);
                                   const h=Math.max(toH-fromH,26);
@@ -2785,7 +2813,7 @@ export default function App() {
                 {/* REVIEWS TAB */}
                 {mTab==="reviews"&&(()=>{
                   const{avg,count}=getMasterRating(masterObj.id);
-                  const masterRevs=reviews.filter(r=>r.masterId===masterObj.id).sort((a,b)=>new Date(b.date)-new Date(a.date));
+                  const masterRevs=reviews.filter(r=>String(r.masterId)===String(masterObj.id)).sort((a,b)=>new Date(b.date)-new Date(a.date));
                   return(
                     <div style={{padding:"22px"}}>
                       <div className="stag">{t.reviews_tab}</div>
