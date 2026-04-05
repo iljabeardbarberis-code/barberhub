@@ -1396,7 +1396,13 @@ export default function App() {
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"" });
   const [authErr, setAuthErr] = useState("");
-  const [page, setPage] = useState("home");
+  const [page, setPageRaw] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_page")||"home"; }catch(e){ return "home"; }
+  });
+  const setPage = (p) => {
+    setPageRaw(p);
+    try{ localStorage.setItem("barberhub_page", p); }catch(e){}
+  };
   const [navOpen, setNavOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
 
@@ -1766,8 +1772,9 @@ export default function App() {
   const logout=async()=>{
     try{ localStorage.removeItem("barberhub_owner"); }catch(e){}
     try{ localStorage.removeItem("barberhub_master"); }catch(e){}
+    try{ localStorage.removeItem("barberhub_page"); }catch(e){}
     try{ await signOut(fbAuth); }catch(e){}
-    setCur(null);setPage("home");
+    setCur(null);setPageRaw("home");
   };
   const goBook=()=>{if(!cur){openAuth("login");return;}setBkDone(false);setBkLoading(false);setPage("book");};
   const activateSub=(sid)=>{
