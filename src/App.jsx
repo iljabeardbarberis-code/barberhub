@@ -1641,27 +1641,52 @@ export default function App() {
 
   // auth
   const openAuth=(mode)=>{setAuthMode(mode);setAuthForm({name:"",email:"",phone:"",password:""});setAuthErr("");setModal("auth");};
-  const doAuth=()=>{
+  const doAuth=async()=>{
+    setAuthErr("");
     if(authMode==="login"){
-      // Check owner first
+      // Owner — локальная проверка
       if(authForm.email===OWNER.email&&authForm.password===OWNER.password){
         setCur({...OWNER});setModal(null);setPage("owner");return;
       }
+      // Мастер — локальная проверка по паролю
       const m=masters.find(m=>m.email===authForm.email&&m.password===authForm.password);
-      if(m){setCur({name:m.firstName,email:m.email,role:"master",sub:null});setModal(null);return;}
-      const u=users.find(u=>u.email===authForm.email&&u.password===authForm.password);
-      if(!u) return setAuthErr(t.err_wrong);
-      setCur(u);setModal(null);
-      // Check if there's a pending review for this client
-      if(pendingVisitReview && pendingVisitReview.clientEmail===u.email){
-        setVisitReview(pendingVisitReview);
-        setVisitRating(5); setVisitText(""); setVisitTip(null); setVisitCustomTip(""); setVisitSubmitted(false); setVisitTipPaid(false);
-        setPendingVisitReview(null);
+      if(m){
+        try{ await signInWithEmailAndPassword(fbAuth,authForm.email,authForm.password); }catch(e){}
+        setCur({name:m.firstName,email:m.email,role:"master",sub:null,uid:m.id});
+        setModal(null);return;
+      }
+      // Клиент — Firebase Auth
+      try{
+        const cred = await signInWithEmailAndPassword(fbAuth,authForm.email,authForm.password);
+        const snap = await getDoc(doc(fbDb,"users",cred.user.uid));
+        const userData = snap.exists()
+          ? snap.data()
+          : {name:cred.user.displayName||authForm.email,email:authForm.email,role:"client",sub:null};
+        setCur({...userData,uid:cred.user.uid});
+        setModal(null);
+        if(pendingVisitReview&&pendingVisitReview.clientEmail===authForm.email){
+          setVisitReview(pendingVisitReview);
+          setVisitRating(5);setVisitText("");setVisitTip(null);setVisitCustomTip("");setVisitSubmitted(false);setVisitTipPaid(false);
+          setPendingVisitReview(null);
+        }
+      }catch(e){
+        if(e.code==="auth/invalid-credential"||e.code==="auth/user-not-found"||e.code==="auth/wrong-password")
+          setAuthErr(t.err_wrong);
+        else setAuthErr(e.message);
       }
     } else {
       if(!authForm.name||!authForm.email||!authForm.phone||!authForm.password) return setAuthErr(t.err_fill);
-      if(users.find(u=>u.email===authForm.email)||masters.find(m=>m.email===authForm.email)||authForm.email===OWNER.email) return setAuthErr(t.err_exists);
-      const nu={...authForm,role:"client",sub:null};setUsers(p=>[...p,nu]);setCur(nu);setModal(null);
+      if(masters.find(m=>m.email===authForm.email)||authForm.email===OWNER.email) return setAuthErr(t.err_exists);
+      try{
+        const cred = await createUserWithEmailAndPassword(fbAuth,authForm.email,authForm.password);
+        const userData = {name:authForm.name,email:authForm.email,phone:authForm.phone,role:"client",sub:null};
+        await setDoc(doc(fbDb,"users",cred.user.uid),userData);
+        setCur({...userData,uid:cred.user.uid});
+        setModal(null);
+      }catch(e){
+        if(e.code==="auth/email-already-in-use") setAuthErr(t.err_exists);
+        else setAuthErr(e.message);
+      }
     }
   };
   const logout=async()=>{try{await signOut(fbAuth);}catch(e){}setCur(null);setPage("home");};
