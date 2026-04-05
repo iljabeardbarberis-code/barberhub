@@ -1670,7 +1670,7 @@ export default function App() {
     if(!cur){openAuth("login");return;}
     const u={...cur,sub:sid};setCur(u);setUsers(p=>p.map(x=>x.email===cur.email?{...x,sub:sid}:x));
   };
-  const confirmBk=()=>{
+  const confirmBk=async()=>{
     const{services,master,date,time,payment}=bk;
     if(!services.length||!master||!date||!time||!payment) return;
     if(getSlotStatus(master,date,time,services)==="busy"){
