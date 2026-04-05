@@ -1391,22 +1391,7 @@ export default function App() {
     return ()=>{ unsub(); clearTimeout(timeout); };
   },[]);
 
-  // ── Firebase Bookings — real-time sync ─────────────────────────────────
-  useEffect(()=>{
-    const q = query(collection(fbDb,"bookings"), orderBy("date"), orderBy("time"));
-    const unsub = onSnapshot(q, snap=>{
-      const firestoreBookings = snap.docs.map(d=>({...d.data(), id:d.id}));
-      if(firestoreBookings.length > 0){
-        // Merge: keep demo bookings that start with number id, add all Firestore bookings
-        setBookings(prev=>{
-          const demoOnly = prev.filter(b=>typeof b.id === "number");
-          const merged = [...demoOnly, ...firestoreBookings];
-          return merged;
-        });
-      }
-    }, ()=>{});
-    return ()=>unsub();
-  },[]);
+  // bookings loaded below after state declaration
   const [modal, setModal] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"" });
@@ -1414,6 +1399,16 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [navOpen, setNavOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
+
+  // ── Load ALL data from Firestore after state is ready ─────────────────
+  useEffect(()=>{
+    // Bookings — real-time
+    const q = query(collection(fbDb,"bookings"), orderBy("date"), orderBy("time"));
+    const unsubBookings = onSnapshot(q, snap=>{
+      setBookings(snap.docs.map(d=>({...d.data(), id:d.id})));
+    }, ()=>{});
+    return ()=>unsubBookings();
+  },[]);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ masterId:"", rating:5, text:"" });
   const [reviewDone, setReviewDone] = useState(false);
@@ -1596,14 +1591,20 @@ export default function App() {
     };
   };
 
-  const myBookings = masterObj
-    ? bookings.filter(b=>String(b.masterId)===String(masterObj?.id||cur?.id))
-    : bookings.filter(b=>b.clientEmail===cur?.email || (cur?.uid && b.clientUid===cur.uid));
+  // ID мастера — из объекта мастера или напрямую из cur при загрузке
+  const curMasterId = masterObj?.id || (cur?.role==="master" ? cur?.id : null);
+
+  const myBookings = cur?.role==="master"
+    ? bookings.filter(b=>String(b.masterId)===String(curMasterId))
+    : bookings.filter(b=>
+        (cur?.email && b.clientEmail===cur.email) ||
+        (cur?.uid && b.clientUid===cur.uid)
+      );
 
   const masterClients = useMemo(()=>{
     if(!masterObj) return [];
     const map={};
-    bookings.filter(b=>String(b.masterId)===String(masterObj.id)).forEach(b=>{
+    bookings.filter(b=>String(b.masterId)===String(curMasterId)).forEach(b=>{
       if(!map[b.clientName]) map[b.clientName]={name:b.clientName,phone:b.clientPhone,visits:0,lastDate:"",total:0};
       map[b.clientName].visits++;
       const s=resolveBooking(b);
@@ -1615,7 +1616,7 @@ export default function App() {
 
   const statsFor = (filter) => {
     if(!masterObj) return {appts:0,rev:0};
-    const bs=bookings.filter(b=>String(b.masterId)===String(masterObj.id)&&filter(b));
+    const bs=bookings.filter(b=>String(b.masterId)===String(curMasterId)&&filter(b));
     return {appts:bs.length, rev:bs.reduce((a,b)=>{return a+resolveBooking(b).price;},0)};
   };
   const statsToday = useMemo(()=>statsFor(b=>b.date===todayStr),[bookings,masterObj,masters]);
@@ -1755,49 +1756,49 @@ export default function App() {
   const confirmBk=async()=>{
     const{services,master,date,time,payment}=bk;
     if(!services.length||!master||!date||!time||!payment) return;
-    if(bkLoading) return; // prevent double-click
+    if(bkLoading) return;
     setBkLoading(true);
     if(getSlotStatus(master,date,time,services)==="busy"){
       alert(lang==="ru"?"Это время уже занято. Выберите другое.":"Šis laikas jau užimtas.");
-      setBk(b=>({...b,time:null})); return;
+      setBk(b=>({...b,time:null}));
+      setBkLoading(false);
+      return;
     }
-    if(payment==="subscription"&&cur?.sub){
-      const left=getSubVisitsLeft(cur.email,cur.sub);
-      if(left===0){
-        alert(lang==="ru"?"Лимит посещений на этот месяц исчерпан.":"Šio mėnesio apsilankymų limitas išnaudotas.");
-        return;
-      }
-      useSubVisit(cur.email,cur.sub);
-    }
-    const newBooking = {
-      masterId:String(master),
-      clientName:cur.name, clientPhone:cur.phone||"", clientEmail:cur.email,
-      clientUid:cur.uid||"",
-      serviceIds:services, serviceId:services[0],
-      date, time, notes:"", status:"confirmed", payment,
-      createdAt:new Date().toISOString()
-    };
-    // Add to local state immediately so master sees it right away
-    const tempId = "temp_"+Date.now();
-    setBookings(p=>[...p,{...newBooking,id:tempId}]);
-    try{
-      const ref = await addDoc(collection(fbDb,"bookings"),newBooking);
-      // Replace temp with real Firestore id
-      setBookings(p=>p.map(b=>b.id===tempId?{...b,id:ref.id}:b));
-    }catch(e){
-      // Keep temp booking on error
-    }
-    // If we get here without bkDone, reset loading
+    const selM = masters.find(m=>String(m.id)===String(master));
+    const svcNames = services.map(sid=>{
+      const sv=(selM?.services||[]).find(s=>s.id===sid);
+      return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";
+    }).filter(Boolean).join(" + ");
 
-    setBkDone(true);
+    const newBooking = {
+      masterId: String(master),
+      clientName: cur.name||"",
+      clientPhone: cur.phone||"",
+      clientEmail: cur.email||"",
+      clientUid: cur.uid||"",
+      serviceIds: services,
+      serviceId: services[0],
+      date, time,
+      notes: "",
+      status: "confirmed",
+      payment,
+      createdAt: new Date().toISOString()
+    };
+
+    try{
+      const ref = await addDoc(collection(fbDb,"bookings"), newBooking);
+      // Firestore onSnapshot will automatically update bookings state
+      // But add locally too for instant feedback
+      setBookings(p=>[...p,{...newBooking, id:ref.id}]);
+      await addNotification("booked",
+        `${cur.name} записался · ${date} ${time} · ${svcNames}`,
+        master, true
+      );
+      setBkDone(true);
+    } catch(e){
+      alert(lang==="ru"?"Ошибка при записи. Попробуйте снова.":"Klaida. Bandykite dar kartą.");
+    }
     setBkLoading(false);
-    const selM=masters.find(m=>String(m.id)===String(master));
-    const svcNames = bk.services.map(sid=>{const sv=(selM?.services||[]).find(s=>s.id===sid);return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";}).filter(Boolean).join(" + ");
-    addNotification("booked",
-      `${cur.name} ${lang==="ru"?"записался":"užregistravo"} · ${date} ${time} · ${svcNames}`,
-      master,   // → мастеру
-      true      // → и владельцу
-    );
   };
   const openNewAppt=(slot)=>{
     setNewAppt({clientMode:"new",clientName:"",clientPhone:"",serviceIds:[],date:slot?fmtDate(slot.date):todayStr,time:slot?.time||"10:00",notes:""});
@@ -2653,7 +2654,7 @@ export default function App() {
                                   );
                                 })}
                                 {/* Schedule blocks */}
-                                {blocks.filter(b=>b.date===ds&&(b.masterId===null||String(b.masterId)===String(masterObj.id))).map(blk=>{
+                                {blocks.filter(b=>b.date===ds&&(b.masterId===null||String(b.masterId)===String(curMasterId))).map(blk=>{
                                   const fromH=slotTop(blk.allDay?"09:00":blk.fromTime);
                                   const toH=blk.allDay?HOURS.length*52:slotTop(blk.toTime);
                                   const h=Math.max(toH-fromH,26);
