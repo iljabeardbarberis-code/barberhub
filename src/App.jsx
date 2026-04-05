@@ -886,7 +886,10 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .notif-bell{position:relative;background:none;border:none;cursor:pointer;padding:6px;font-size:18px;transition:transform .18s;}
 .notif-bell:hover{transform:scale(1.15);}
 .notif-dot{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--bg);}
-.notif-panel{position:fixed;top:56px;right:8px;width:min(340px,95vw);max-height:420px;background:var(--dark);border:1px solid var(--b2);border-radius:14px;z-index:400;overflow:hidden;animation:slideUp .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+.notif-panel{position:fixed;top:56px;right:8px;width:min(340px,95vw);max-height:420px;background:var(--dark);border:1px solid var(--b2);border-radius:14px;z-index:9999;overflow:hidden;animation:slideUp .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+@media(max-width:600px){
+  .notif-panel{position:fixed;bottom:0;left:0;right:0;top:auto;width:100%;max-height:80vh;border-radius:20px 20px 0 0;border-bottom:none;}
+}
 .notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
 .notif-head-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;}
 .notif-list{overflow-y:auto;max-height:340px;}
@@ -1935,7 +1938,7 @@ export default function App() {
         <nav className="nav">
           <div className="logo" onClick={()=>{setPage("home");setNavOpen(false);}}><b>BARBER</b> HUB</div>
           {/* Burger button — opens owner drawer for owner, nav drawer for others */}
-          <button className="nav-burger" onClick={()=>isOwner ? setOwnerDrawerOpen(true) : setNavOpen(true)}>☰</button>
+          <button className="nav-burger" onClick={e=>{e.preventDefault();e.stopPropagation();isOwner ? setOwnerDrawerOpen(true) : setNavOpen(true);}}>☰</button>
           <div className="nav-mid nav-links">
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>setPage("home")}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.services}</button>
@@ -1959,11 +1962,13 @@ export default function App() {
                 {!masterObj&&!isOwner&&<button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>}
                 {(masterObj||isOwner)&&(
                   <div style={{position:"relative",zIndex:150}}>
-                    <button className="notif-bell" onClick={e=>{e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
+                    <button className="notif-bell" style={{zIndex:9999,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
                       🔔{unreadCount>0&&<div className="notif-dot"/>}
                     </button>
                     {showNotifs&&(
-                      <div className="notif-panel" onClick={e=>e.stopPropagation()}>
+                      <>
+                      <div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setShowNotifs(false)}/>
+                      <div className="notif-panel" style={{zIndex:9999}} onClick={e=>e.stopPropagation()}>
                         <div className="notif-head">
                           <div className="notif-head-title">🔔 {t.notif_title}</div>
                           <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -1989,6 +1994,7 @@ export default function App() {
                           }
                         </div>
                       </div>
+                      </>
                     )}
                   </div>
                 )}
