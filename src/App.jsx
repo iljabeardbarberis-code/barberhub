@@ -457,8 +457,9 @@ function getWeekDates(anchor) {
   return Array.from({length:7},(_,i)=>{ const x=new Date(mon); x.setDate(mon.getDate()+i); return x; });
 }
 function timeToMins(t) { const[h,m]=t.split(":").map(Number); return h*60+m; }
-function slotTop(time) { return ((timeToMins(time)-timeToMins("09:00"))/30)*52; }
-function slotHeight(mins) { return Math.max((mins/30)*52, 44); }
+const SLOT_H = 52; // default, overridden by state below
+function slotTop(time, sh=52) { return ((timeToMins(time)-timeToMins("09:00"))/30)*sh; }
+function slotHeight(mins, sh=52) { return Math.max((mins/30)*sh, Math.min(sh, 30)); }
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -618,15 +619,15 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tab{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;transition:all .18s;}
 .cal-tab.on{background:var(--or);color:var(--bg);}
 .cal-body{flex:1;overflow:auto;}
-.cal-week{display:flex;flex-direction:column;}
+.cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .cal-dh{display:grid;grid-template-columns:50px repeat(7,1fr);border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
 .cal-dhd{padding:8px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--mu2);border-left:1px solid var(--border);}
 .cal-dhd.td{color:var(--or);}
 .day-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;display:block;}
 .day-name{font-size:8px;letter-spacing:1px;text-transform:uppercase;}
 .cal-grid{display:grid;grid-template-columns:50px repeat(7,1fr);}
-.cal-hr{font-size:9px;color:var(--mu);padding:0 4px;text-align:right;height:52px;display:flex;align-items:flex-start;padding-top:3px;border-bottom:1px solid var(--border);}
-.cal-cell{height:52px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;cursor:pointer;transition:background .15s;}
+.cal-hr{font-size:9px;color:var(--mu);padding:0 4px;text-align:right;display:flex;align-items:flex-start;padding-top:3px;border-bottom:1px solid var(--border);}
+.cal-cell{border-left:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;cursor:pointer;transition:background .15s;}
 .cal-cell:hover{background:var(--ord);}
 .cal-cell.drag-over{background:rgba(31,186,122,.2)!important;border:1px dashed var(--gr);}
 .td-col{background:rgba(232,101,10,.03);}
@@ -1473,6 +1474,7 @@ export default function App() {
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [mTab, setMTab] = useState("calendar");
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
+  const [calZoom, setCalZoom] = useState(32); // slot height in px - compact default
   const [widgetBtnVisible, setWidgetBtnVisible] = useState(true);
   const lastScrollY = useRef(0);
   useEffect(()=>{
@@ -2750,6 +2752,11 @@ export default function App() {
                         <button className={`cal-tab${calView==="week"?" on":""}`} onClick={()=>setCalView("week")}>{t.cal_week}</button>
                         <button className={`cal-tab${calView==="list"?" on":""}`} onClick={()=>setCalView("list")}>{t.cal_list}</button>
                       </div>
+                      {/* Zoom controls */}
+                      <div style={{display:"flex",gap:3,marginLeft:6}}>
+                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.max(20,z-8))}>−</button>
+                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.min(80,z+8))}>+</button>
+                      </div>
                       <button className="btn b-sm" style={{background:mc,color:"var(--bg)"}} onClick={()=>openNewAppt(null)}>{t.new_appt}</button>
                     </div>
                   </div>
@@ -2766,19 +2773,20 @@ export default function App() {
                             </div>
                           ))}
                         </div>
-                        <div className="cal-grid" style={{minHeight:HOURS.length*52}}>
-                          <div>{HOURS.map(h=><div key={h} className="cal-hr">{h}</div>)}</div>
+                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom}}>
+                          <div>{HOURS.map(h=><div key={h} className="cal-hr" style={{height:calZoom}}>{h}</div>)}</div>
                           {weekDates.map(d=>{
                             const ds=fmtDate(d);
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
-                              <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*52}}>
+                              <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*calZoom}}>
                                 {HOURS.map(h=>{
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
                                   return(
                                     <div key={h}
                                       className={`cal-cell${isOver?" drag-over":""}`}
+                                      style={{height:calZoom}}
                                       onClick={()=>!dragId&&openNewAppt({date:d,time:h})}
                                       onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
                                       onDragLeave={()=>setDragOver(null)}
@@ -2788,8 +2796,8 @@ export default function App() {
                                 })}
                                 {/* Schedule blocks */}
                                 {blocks.filter(b=>b.date===ds&&(b.masterId===null||String(b.masterId)===String(curMasterId))).map(blk=>{
-                                  const fromH=slotTop(blk.allDay?"09:00":blk.fromTime);
-                                  const toH=blk.allDay?HOURS.length*52:slotTop(blk.toTime);
+                                  const fromH=slotTop(blk.allDay?"09:00":blk.fromTime,calZoom);
+                                  const toH=blk.allDay?HOURS.length*calZoom:slotTop(blk.toTime,calZoom);
                                   const h=Math.max(toH-fromH,26);
                                   return(
                                     <div key={blk.id}
@@ -2816,7 +2824,7 @@ export default function App() {
                                   return(
                                     <div key={appt.id}
                                       className={`ab${appt.status==="done"?" done":""}${isDragging?" dragging":""}`}
-                                      style={{top:slotTop(appt.time),height:slotHeight(svc?.mins||30),background:mc,color:"#fff"}}
+                                      style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                       draggable
                                       onDragStart={e=>{setDragId(appt.id);e.dataTransfer.effectAllowed="move";}}
                                       onDragEnd={()=>{setDragId(null);setDragOver(null);}}
