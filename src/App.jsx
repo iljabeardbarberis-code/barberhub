@@ -1425,6 +1425,23 @@ export default function App() {
   const [visitSubmitted, setVisitSubmitted] = useState(false);
   const [visitTipPaid, setVisitTipPaid] = useState(false);
   const [pendingVisitReview, setPendingVisitReview] = useState(null);
+
+  // Check Firestore for pending review popup when client is logged in
+  useEffect(()=>{
+    if(!cur?.email || cur?.role!=="client") return;
+    const key = cur.email.replace(/[.@]/g,"_");
+    const unsub = onSnapshot(doc(fbDb,"pendingReviews",key), snap=>{
+      if(snap.exists()){
+        const data = snap.data();
+        setVisitReview(data);
+        setVisitRating(5); setVisitText(""); setVisitTip(null);
+        setVisitCustomTip(""); setVisitSubmitted(false); setVisitTipPaid(false);
+        // Delete so it doesn't show again
+        deleteDoc(doc(fbDb,"pendingReviews",key)).catch(()=>{});
+      }
+    }, ()=>{});
+    return ()=>unsub();
+  },[cur?.email, cur?.role]);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const carouselTouchStart = useRef(0);
   const [bk, setBk] = useState({ services:[], master:null, date:null, time:null, payment:null });
@@ -1819,26 +1836,40 @@ export default function App() {
     }]);
     setModal(null);
   };
-  const updateStatus=(id,status)=>{
+  const updateStatus=async(id,status)=>{
     setBookings(p=>p.map(b=>b.id===id?{...b,status}:b));
     setDetailAppt(a=>a?.id===id?{...a,status}:a);
+    // Save status to Firestore
+    try{ await updateDoc(doc(fbDb,"bookings",id),{status}); }catch(e){}
+
     if(status==="done"){
       const b=bookings.find(x=>x.id===id);
       if(b){
-        const m=masters.find(x=>x.id===b.masterId);
-        // Store pending review — will show when the client logs in / is logged in
-        const pending = {bookingId:id, masterId:b.masterId, masterObj:m, clientEmail:b.clientEmail, clientName:b.clientName, serviceIds:b.serviceIds||[b.serviceId]};
-        // If the client of THIS booking is currently logged in — show popup immediately
+        const m=masters.find(x=>String(x.id)===String(b.masterId));
+        const pending = {
+          bookingId:id, masterId:b.masterId,
+          masterObj:m, clientEmail:b.clientEmail,
+          clientName:b.clientName, serviceIds:b.serviceIds||[b.serviceId]
+        };
+        // Save pending review to Firestore so client sees it on their device
+        try{
+          await setDoc(doc(fbDb,"pendingReviews",b.clientEmail.replace(/[.@]/g,"_")), {
+            ...pending, masterObj:{
+              id:m?.id, firstName:m?.firstName, lastName:m?.lastName,
+              color:m?.color, emoji:m?.emoji, photo:m?.photo||""
+            }
+          });
+        }catch(e){}
+
+        // If client is currently logged in on same device — show immediately
         if(cur?.role==="client" && cur?.email===b.clientEmail){
           setVisitReview(pending);
-          setVisitRating(5); setVisitText(""); setVisitTip(null); setVisitCustomTip(""); setVisitSubmitted(false); setVisitTipPaid(false);
-          setPendingVisitReview(null);
-        } else if(!cur || cur?.role!=="client") {
-          // Master/owner doing this action — save pending for when client logs in
-          setPendingVisitReview(pending);
+          setVisitRating(5); setVisitText(""); setVisitTip(null);
+          setVisitCustomTip(""); setVisitSubmitted(false); setVisitTipPaid(false);
         }
-        addNotification("booked",
-          lang==="ru"?`Визит завершён для ${b.clientName} у ${m?.firstName}`:`Vizitas baigtas ${b.clientName} pas ${m?.firstName}`,
+        addNotification(
+          "booked",
+          lang==="ru"?`Визит завершён · ${b.clientName}`:` Vizitas baigtas · ${b.clientName}`,
           b.masterId, true
         );
       }
