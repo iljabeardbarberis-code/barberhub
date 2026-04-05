@@ -1461,6 +1461,7 @@ export default function App() {
   const carouselTouchStart = useRef(0);
   const [bk, setBk] = useState({ services:[], master:null, date:null, time:null, payment:null });
   const [bkDone, setBkDone] = useState(false);
+  const [bkLoading, setBkLoading] = useState(false);
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [mTab, setMTab] = useState("calendar");
@@ -1772,7 +1773,7 @@ export default function App() {
     try{ await signOut(fbAuth); }catch(e){}
     setCur(null);setPage("home");
   };
-  const goBook=()=>{if(!cur){openAuth("login");return;}setBkDone(false);setPage("book");};
+  const goBook=()=>{if(!cur){openAuth("login");return;}setBkDone(false);setBkLoading(false);setPage("book");};
   const activateSub=(sid)=>{
     if(!cur){openAuth("login");return;}
     const u={...cur,sub:sid};setCur(u);setUsers(p=>p.map(x=>x.email===cur.email?{...x,sub:sid}:x));
@@ -1780,6 +1781,8 @@ export default function App() {
   const confirmBk=async()=>{
     const{services,master,date,time,payment}=bk;
     if(!services.length||!master||!date||!time||!payment) return;
+    if(bkLoading) return; // prevent double-click
+    setBkLoading(true);
     if(getSlotStatus(master,date,time,services)==="busy"){
       alert(lang==="ru"?"Это время уже занято. Выберите другое.":"Šis laikas jau užimtas.");
       setBk(b=>({...b,time:null})); return;
@@ -1810,7 +1813,10 @@ export default function App() {
     }catch(e){
       // Keep temp booking on error
     }
+    // If we get here without bkDone, reset loading
+
     setBkDone(true);
+    setBkLoading(false);
     const selM=masters.find(m=>String(m.id)===String(master));
     const svcNames = bk.services.map(sid=>{const sv=(selM?.services||[]).find(s=>s.id===sid);return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";}).filter(Boolean).join(" + ");
     addNotification("booked",
@@ -2532,17 +2538,18 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                  <button className="btn b-or b-lg b-full" onClick={confirmBk}
+                  <button className="btn b-or b-lg b-full" onClick={confirmBk} disabled={bkLoading||!bk.payment}
                     style={{
-                      opacity:bk.payment?1:.45,
-                      cursor:bk.payment?"pointer":"not-allowed",
+                      opacity:(bk.payment&&!bkLoading)?1:.45,
+                      cursor:(bk.payment&&!bkLoading)?"pointer":"not-allowed",
                       background: bk.payment==="subscription" ? "var(--gr)" : undefined,
                     }}>
-                    {bk.payment==="subscription"
-                      ? `${t.confirm} · 💳 ${cur?.sub?.toUpperCase()}`
-                      : bk.payment==="cash"
-                        ? `${t.confirm} · 💵 ${t.payment_cash}`
-                        : `↑ ${t.payment_method}`
+                    {bkLoading ? (lang==="ru"?"Сохраняем...":"Išsaugome...")
+                      : bk.payment==="subscription"
+                        ? `${t.confirm} · 💳 ${cur?.sub?.toUpperCase()}`
+                        : bk.payment==="cash"
+                          ? `${t.confirm} · 💵 ${t.payment_cash}`
+                          : `↑ ${t.payment_method}`
                     }
                   </button>
                 </div>
