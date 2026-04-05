@@ -1962,40 +1962,9 @@ export default function App() {
                 {!masterObj&&!isOwner&&<button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>}
                 {(masterObj||isOwner)&&(
                   <div style={{position:"relative",zIndex:150}}>
-                    <button className="notif-bell" style={{zIndex:9999,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
+                    <button className="notif-bell" style={{zIndex:150,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
                       🔔{unreadCount>0&&<div className="notif-dot"/>}
                     </button>
-                    {showNotifs&&(
-                      <>
-                      <div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setShowNotifs(false)}/>
-                      <div className="notif-panel" style={{zIndex:9999}} onClick={e=>e.stopPropagation()}>
-                        <div className="notif-head">
-                          <div className="notif-head-title">🔔 {t.notif_title}</div>
-                          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                            {unreadCount>0&&<span style={{fontSize:11,background:"var(--red)",color:"#fff",padding:"2px 7px",borderRadius:20,fontWeight:800}}>{unreadCount}</span>}
-                            <button className="btn b-card b-sm" onClick={markAllRead} style={{fontSize:10}}>{t.notif_mark_read}</button>
-                            <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:16}} onClick={()=>setShowNotifs(false)}>✕</button>
-                          </div>
-                        </div>
-                        <div className="notif-list">
-                          {myNotifications.length===0
-                            ?<div style={{padding:"24px",textAlign:"center",color:"var(--mu)",fontSize:13}}>{t.notif_empty}</div>
-                            :myNotifications.map(n=>(
-                              <div key={n.id} className={`notif-item${n.read?"":" unread"}`}>
-                                <div className="notif-item-text">
-                                  <span className="notif-item-icon">
-                                    {n.type==="booked"?"✅":n.type==="cancelled"?"❌":n.type==="rescheduled"?"📅":n.type==="block_added"?"🚫":n.type==="block_removed"?"✓":"ℹ️"}
-                                  </span>
-                                  {n.text}
-                                </div>
-                                <div className="notif-item-time">{n.time}</div>
-                              </div>
-                            ))
-                          }
-                        </div>
-                      </div>
-                      </>
-                    )}
                   </div>
                 )}
                 <button className="btn b-ghost b-sm" onClick={logout}>{t.logout}</button>
@@ -2870,7 +2839,50 @@ export default function App() {
             </div>
           );
         })()}
-        {/* OWNER MOBILE DRAWER — always available when owner is logged in */}
+        {/* NOTIFICATIONS — bottom sheet on mobile, dropdown on desktop */}
+        {showNotifs&&(
+          <>
+            <div style={{position:"fixed",inset:0,zIndex:9990,background:"rgba(0,0,0,.5)"}} onClick={()=>setShowNotifs(false)}/>
+            <div style={{
+              position:"fixed",bottom:0,left:0,right:0,
+              background:"var(--dark)",borderRadius:"20px 20px 0 0",
+              zIndex:9991,maxHeight:"75vh",display:"flex",flexDirection:"column",
+              border:"1px solid var(--border)",
+              animation:"slideUp .25s ease"
+            }} onClick={e=>e.stopPropagation()}>
+              {/* Handle */}
+              <div style={{width:36,height:4,background:"var(--border)",borderRadius:2,margin:"14px auto 0"}}/>
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",borderBottom:"1px solid var(--border)"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>
+                  🔔 {t.notif_title}
+                  {unreadCount>0&&<span style={{fontSize:11,background:"var(--red)",color:"#fff",padding:"2px 8px",borderRadius:20,fontWeight:800,marginLeft:8}}>{unreadCount}</span>}
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  {unreadCount>0&&<button className="btn b-card b-sm" onClick={markAllRead} style={{fontSize:11}}>{t.notif_mark_read}</button>}
+                  <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:20,lineHeight:1}} onClick={()=>setShowNotifs(false)}>✕</button>
+                </div>
+              </div>
+              {/* List */}
+              <div style={{overflowY:"auto",flex:1,padding:"8px 0"}}>
+                {myNotifications.length===0
+                  ?<div style={{padding:"32px",textAlign:"center",color:"var(--mu)",fontSize:13}}>{t.notif_empty}</div>
+                  :myNotifications.map(n=>(
+                    <div key={n.id} className={`notif-item${n.read?"":" unread"}`}>
+                      <div className="notif-item-text">
+                        <span className="notif-item-icon">
+                          {n.type==="booked"?"✅":n.type==="cancelled"?"❌":n.type==="rescheduled"?"📅":n.type==="block_added"?"🚫":n.type==="block_removed"?"✓":"ℹ️"}
+                        </span>
+                        {n.text}
+                      </div>
+                      <div className="notif-item-time">{n.time}</div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </>
+        )}
         {isOwner&&ownerDrawerOpen&&(
           <>
             <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9998}} onClick={()=>setOwnerDrawerOpen(false)}/>
