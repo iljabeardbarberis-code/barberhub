@@ -1637,7 +1637,7 @@ export default function App() {
 
   const statsFor = (filter) => {
     if(!masterObj) return {appts:0,rev:0};
-    const bs=bookings.filter(b=>String(b.masterId)===String(curMasterId)&&filter(b));
+    const bs=bookings.filter(b=>String(b.masterId)===String(curMasterId)&&b.status!=="cancelled"&&filter(b));
     return {appts:bs.length, rev:bs.reduce((a,b)=>{return a+resolveBooking(b).price;},0)};
   };
   const statsToday = useMemo(()=>statsFor(b=>b.date===todayStr),[bookings,masterObj,masters]);
@@ -2691,7 +2691,7 @@ export default function App() {
                           <div>{HOURS.map(h=><div key={h} className="cal-hr">{h}</div>)}</div>
                           {weekDates.map(d=>{
                             const ds=fmtDate(d);
-                            const dayA=myBookings.filter(b=>b.date===ds);
+                            const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
                               <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*52}}>
                                 {HOURS.map(h=>{
@@ -2761,7 +2761,7 @@ export default function App() {
                     <div className="list-view">
                       {weekDates.map(d=>{
                         const ds=fmtDate(d);
-                        const dayA=myBookings.filter(b=>b.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
+                        const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled").sort((a,b)=>a.time.localeCompare(b.time));
                         if(!dayA.length) return null;
                         return(
                           <div key={ds} className="ldg">
