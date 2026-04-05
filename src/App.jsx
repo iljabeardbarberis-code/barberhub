@@ -1369,8 +1369,28 @@ export default function App() {
 
   // ── Firebase Auth — restore session on reload ───────────────────────────
   useEffect(()=>{
-    // Safety timeout — if Firebase takes too long, show the app anyway
+    // Safety timeout
     const timeout = setTimeout(()=>setFbLoading(false), 5000);
+
+    // Check owner session from localStorage first
+    try{
+      const saved = localStorage.getItem("barberhub_owner");
+      if(saved==="true"){
+        setCur({...OWNER});
+        clearTimeout(timeout);
+        setFbLoading(false);
+        return ()=>{};
+      }
+      // Check master session
+      const savedMaster = localStorage.getItem("barberhub_master");
+      if(savedMaster){
+        const masterData = JSON.parse(savedMaster);
+        setCur(masterData);
+        clearTimeout(timeout);
+        setFbLoading(false);
+        return ()=>{};
+      }
+    }catch(e){}
 
     const unsub = onAuthStateChanged(fbAuth, async (firebaseUser)=>{
       try{
@@ -1391,7 +1411,6 @@ export default function App() {
           setCur(null);
         }
       } catch(e){
-        // Network error — continue without user
         setCur(null);
       }
       clearTimeout(timeout);
@@ -1669,13 +1688,16 @@ export default function App() {
     if(authMode==="login"){
       // Owner — локальная проверка
       if(authForm.email===OWNER.email&&authForm.password===OWNER.password){
+        try{ localStorage.setItem("barberhub_owner","true"); }catch(e){}
         setCur({...OWNER});setModal(null);setPage("owner");return;
       }
       // Мастер — локальная проверка по паролю
       const m=masters.find(m=>m.email===authForm.email&&m.password===authForm.password);
       if(m){
         try{ await signInWithEmailAndPassword(fbAuth,authForm.email,authForm.password); }catch(e){}
-        setCur({name:m.firstName,email:m.email,role:"master",sub:null,uid:m.id});
+        const masterData = {name:m.firstName,email:m.email,role:"master",sub:null,uid:m.id};
+        try{ localStorage.setItem("barberhub_master", JSON.stringify(masterData)); }catch(e){}
+        setCur(masterData);
         setModal(null);return;
       }
       // Клиент — Firebase Auth
@@ -1712,7 +1734,12 @@ export default function App() {
       }
     }
   };
-  const logout=async()=>{try{await signOut(fbAuth);}catch(e){}setCur(null);setPage("home");};
+  const logout=async()=>{
+    try{ localStorage.removeItem("barberhub_owner"); }catch(e){}
+    try{ localStorage.removeItem("barberhub_master"); }catch(e){}
+    try{ await signOut(fbAuth); }catch(e){}
+    setCur(null);setPage("home");
+  };
   const goBook=()=>{if(!cur){openAuth("login");return;}setBkDone(false);setPage("book");};
   const activateSub=(sid)=>{
     if(!cur){openAuth("login");return;}
