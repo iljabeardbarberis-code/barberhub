@@ -2870,32 +2870,37 @@ export default function App() {
             </div>
           );
         })()}
-        {/* OWNER PANEL */}
-        {/* OWNER MOBILE BUBBLE + DRAWER */}
-        {page==="owner"&&isOwner&&(
+        {/* OWNER MOBILE DRAWER — always available when owner is logged in */}
+        {isOwner&&ownerDrawerOpen&&(
           <>
-            <button className="owner-bubble" onClick={()=>setOwnerDrawerOpen(true)}>☰</button>
-            {ownerDrawerOpen&&<>
-              <div className="owner-drawer-overlay" onClick={()=>setOwnerDrawerOpen(false)}/>
-              <div className="owner-drawer-menu">
-                <div className="owner-drawer-handle"/>
-                {[
-                  {key:"masters",  icon:"✂️", label:t.owner_tab_masters,  badge:masters.length},
-                  {key:"bookings", icon:"📋", label:t.owner_tab_bookings, badge:bookings.length},
-                  {key:"stats",    icon:"📊", label:t.owner_tab_stats},
-                  {key:"reviews",  icon:"⭐", label:t.owner_tab_reviews,  badge:reviews.length},
-                  {key:"subs",     icon:"💳", label:t.owner_tab_subs},
-                  {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
-                ].map(item=>(
-                  <button key={item.key} className={`owner-drawer-item${ownerTab===item.key?" on":""}`}
-                    onClick={()=>{setOwnerTab(item.key);setOwnerDrawerOpen(false);}}>
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                    {item.badge!=null&&<span className="owner-badge">{item.badge}</span>}
-                  </button>
-                ))}
-              </div>
-            </>}
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9998}} onClick={()=>setOwnerDrawerOpen(false)}/>
+            <div style={{position:"fixed",bottom:0,left:0,right:0,background:"var(--dark)",borderRadius:"20px 20px 0 0",zIndex:9999,padding:16,borderTop:"1px solid var(--border)",animation:"slideUp .25s ease"}}>
+              <div style={{width:36,height:4,background:"var(--border)",borderRadius:2,margin:"0 auto 16px"}}/>
+              {[
+                {key:"owner",    icon:"👑", label:t.owner_panel},
+                {key:"masters",  icon:"✂️", label:t.owner_tab_masters,  badge:masters.length},
+                {key:"bookings", icon:"📋", label:t.owner_tab_bookings, badge:bookings.length},
+                {key:"stats",    icon:"📊", label:t.owner_tab_stats},
+                {key:"reviews",  icon:"⭐", label:t.owner_tab_reviews,  badge:reviews.length},
+                {key:"subs",     icon:"💳", label:t.owner_tab_subs},
+                {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
+              ].map(item=>(
+                <button key={item.key}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"13px 12px",borderRadius:10,cursor:"pointer",border:"none",
+                    background:((item.key==="owner"&&page==="owner")||(item.key!=="owner"&&page==="owner"&&ownerTab===item.key))?"rgba(245,158,11,.12)":"none",
+                    color:((item.key==="owner"&&page==="owner")||(item.key!=="owner"&&page==="owner"&&ownerTab===item.key))?"var(--gold)":"var(--wh)",
+                    fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,width:"100%",textAlign:"left",transition:"background .15s"}}
+                  onClick={()=>{
+                    if(item.key==="owner"){ setPage("owner"); }
+                    else { setPage("owner"); setOwnerTab(item.key); }
+                    setOwnerDrawerOpen(false);
+                  }}>
+                  <span style={{fontSize:18}}>{item.icon}</span>
+                  <span style={{flex:1}}>{item.label}</span>
+                  {item.badge!=null&&<span className="owner-badge">{item.badge}</span>}
+                </button>
+              ))}
+            </div>
           </>
         )}
         {page==="owner"&&isOwner&&ownerFormOpen&&(
