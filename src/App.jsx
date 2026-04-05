@@ -493,6 +493,8 @@ const CSS = `
 }
 body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:15px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(14,10,6,.97);backdrop-filter:blur(16px);gap:10px;}
+.nav-links{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;flex-wrap:wrap;}
+.nav-burger{display:none;background:none;border:none;color:var(--wh);font-size:22px;cursor:pointer;padding:4px 8px;}
 .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;cursor:pointer;flex-shrink:0;}
 .logo b{color:var(--or);}
 .nav-mid{display:flex;gap:2px;flex:1;justify-content:center;flex-wrap:wrap;}
@@ -679,6 +681,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .carousel-btn.prev{left:0;}
 .carousel-btn.next{right:0;}
 .carousel-dots{display:flex;justify-content:center;gap:7px;margin-top:18px;}
+.rev-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:18px;position:relative;overflow:hidden;height:100%;display:flex;flex-direction:column;gap:10px;}
+.rev-top{display:flex;align-items:center;gap:10px;}
+.rev-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;}
+.rev-author{font-weight:700;font-size:14px;}
+.rev-meta{font-size:11px;color:var(--mu);}
+.rev-text{font-size:13px;color:var(--mu2);line-height:1.65;font-style:italic;flex:1;}
+.rev-mbadge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;width:fit-content;}
 .carousel-dot{width:7px;height:7px;border-radius:50%;background:var(--border);border:none;cursor:pointer;transition:all .18s;padding:0;}
 .carousel-dot.on{background:var(--or);width:22px;border-radius:4px;}
 .rev-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -758,9 +767,12 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
 /* ── MOBILE RESPONSIVE ───────────────────────────────────────────────────── */
 @media(max-width:600px){
-  .nav{padding:0 12px;height:50px;}
+  .nav{padding:0 12px;height:50px;flex-wrap:nowrap;overflow:hidden;}
   .nav-logo{font-size:16px;letter-spacing:2px;}
-  .nl{font-size:11px;padding:5px 7px;}
+  .nav-links{display:none!important;}
+  .nav-links.open{display:flex!important;flex-direction:column;position:fixed;top:50px;left:0;right:0;background:var(--dark);padding:16px;gap:8px;z-index:200;border-bottom:1px solid var(--border);}
+  .nl{font-size:13px;padding:10px 14px;width:100%;text-align:left;}
+  .nav-burger{display:flex!important;}
   .hero{padding:44px 16px 36px;}
   .htitle{font-size:48px;line-height:.92;}
   .hsub{font-size:13px;}
@@ -770,8 +782,11 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .hstat-n{font-size:34px;}
   .sec{padding:36px 16px;}
   .stitle{font-size:30px;}
-  .svc-grid{grid-template-columns:1fr;}
-  .svc-card{padding:14px 16px;}
+  .svc-grid{grid-template-columns:1fr 1fr!important;gap:8px!important;}
+  .svc-card{padding:12px 10px;}
+  .sn{font-size:13px;}
+  .sp{font-size:18px;}
+  .sd{font-size:10px;}
   .m-grid{flex-direction:column;gap:10px;}
   .m-card{min-width:unset;width:100%;padding:18px 16px;}
   .dates-row{gap:5px;}
@@ -1316,6 +1331,7 @@ export default function App() {
   const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"" });
   const [authErr, setAuthErr] = useState("");
   const [page, setPage] = useState("home");
+  const [navOpen, setNavOpen] = useState(false);
   const [bookings, setBookings] = useState([
     { id:10, masterId:1, clientName:"Иван Петров",    clientPhone:"+370 655 11111", serviceId:"s1_1", date:todayStr, time:"10:00", notes:"", status:"confirmed" },
     { id:11, masterId:1, clientName:"Артём Козлов",   clientPhone:"+370 655 22222", serviceId:"s1_2", date:todayStr, time:"11:30", notes:"бороду покороче", status:"confirmed" },
@@ -1762,8 +1778,10 @@ export default function App() {
       <div>
         {/* NAV */}
         <nav className="nav">
-          <div className="logo" onClick={()=>setPage("home")}><b>BARBER</b> HUB</div>
-          <div className="nav-mid">
+          <div className="logo" onClick={()=>{setPage("home");setNavOpen(false);}}><b>BARBER</b> HUB</div>
+          {/* Burger button — only visible on mobile via CSS */}
+          <button className="nav-burger" onClick={()=>setNavOpen(p=>!p)}>☰</button>
+          <div className={`nav-mid nav-links${navOpen?" open":""}`} onClick={()=>setNavOpen(false)}>
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>setPage("home")}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.services}</button>
             <button className="nl" onClick={()=>{setPage("home");setTimeout(()=>document.getElementById("msts")?.scrollIntoView({behavior:"smooth"}),80);}}>{t.masters}</button>
@@ -1979,13 +1997,13 @@ export default function App() {
                 .sort((a,b)=>b.rating-a.rating||new Date(b.date)-new Date(a.date))
                 .slice(0,8);
               if(!topRevs.length) return null;
-              // how many cards visible based on rough width — use 1 on mobile, 3 on desktop
-              const perPage = 3;
+              // 1 card on mobile, 3 on desktop
+              const perPage = window.innerWidth < 600 ? 1 : 3;
               const maxIdx = Math.max(0, topRevs.length - perPage);
               const goTo = (idx) => setCarouselIdx(Math.max(0, Math.min(idx, maxIdx)));
               const cardPct = 100 / perPage;
               return(
-                <div style={{position:"relative",padding:"0 44px"}}>
+                <div style={{position:"relative",padding:window.innerWidth<600?"0 32px":"0 44px"}}>
                   {/* Prev */}
                   <button className="carousel-btn prev" onClick={()=>goTo(carouselIdx-1)} style={{opacity:carouselIdx===0?.3:1}}>‹</button>
                   {/* Track */}
