@@ -518,13 +518,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .nl{background:none;border:none;color:var(--mu2);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .18s;}
 .nl:hover,.nl.on{color:var(--or);background:var(--ord);}
 .nl.g:hover,.nl.g.on{color:var(--gr);background:var(--grd);}
-.nav-r{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.nav-r{display:flex;align-items:center;gap:5px;flex-shrink:0;max-width:calc(100vw - 220px);}
 .lang{display:flex;border:1px solid var(--b2);border-radius:7px;overflow:hidden;}
 .lb{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;padding:5px 10px;transition:all .18s;}
 .lb.on{background:var(--or);color:var(--bg);}
 .ubar{display:flex;align-items:center;gap:7px;}
 .udot{width:7px;height:7px;border-radius:50%;animation:pulse 2s infinite;}
-.uname{font-size:12px;color:var(--mu2);font-weight:700;}
+.uname{font-size:11px;color:var(--mu2);font-weight:700;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;transition:all .18s;white-space:nowrap;}
 .b-or{background:var(--or);color:var(--bg);}
 .b-or:hover{background:var(--or2);transform:translateY(-1px);}
@@ -824,29 +824,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .cal-hd-title{font-size:13px;}
   .cal-hr{font-size:8px;padding:0 2px;}
   .owner-cab{flex-direction:column;}
-  .owner-sb{
-    width:100%;flex-direction:row;overflow-x:auto;
-    padding:4px 8px;gap:4px;
-    border-right:none;border-bottom:1px solid var(--border);
-    min-height:unset;background:var(--dark);
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .owner-sb::-webkit-scrollbar{display:none;}
-  .owner-logo{display:none;}
-  .owner-link{
-    padding:8px 12px;font-size:12px;font-weight:700;
-    white-space:nowrap;border-radius:20px;
-    flex-shrink:0;
-  }
-  .owner-link.on{background:rgba(245,158,11,.15)!important;}
-  .owner-icon{display:inline!important;margin-right:4px;}
-  .owner-badge{font-size:9px;padding:1px 5px;margin-left:4px;}
+  /* Owner panel — hide sidebar, show floating bubble */
+  .owner-sb{display:none!important;}
+  .owner-bubble{display:flex!important;}
+  .owner-drawer-overlay{display:block!important;}
   .owner-con{padding:12px;}
   .owner-form{padding:12px;}
   .g2{grid-template-columns:1fr!important;}
-  .owner-crown{font-size:24px;}
-  .owner-title{font-size:14px;}
   .g2{grid-template-columns:1fr!important;}
   .modal{padding:18px 14px;}
   .m-title{font-size:20px;}
@@ -961,12 +945,21 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .owner-icon{font-size:14px;width:18px;text-align:center;}
 .owner-badge{margin-left:auto;background:var(--gold);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
 .owner-con{flex:1;overflow:auto;padding:24px;}
-.master-mgmt-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:18px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:border-color .18s;}
+.master-mgmt-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;transition:border-color .18s;overflow:hidden;}
 .master-mgmt-card:hover{border-color:var(--b2);}
+/* Owner mobile bubble */
+.owner-bubble{display:none;position:fixed;bottom:24px;right:20px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(245,158,11,.4);align-items:center;justify-content:center;transition:transform .2s;}
+.owner-bubble:hover{transform:scale(1.1);}
+.owner-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:201;}
+.owner-drawer-menu{position:fixed;bottom:0;left:0;right:0;background:var(--dark);border-radius:20px 20px 0 0;z-index:202;padding:16px;border-top:1px solid var(--border);animation:slideUp .25s ease;}
+.owner-drawer-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.owner-drawer-item{display:flex;align-items:center;gap:12px;padding:14px 12px;border-radius:10px;cursor:pointer;border:none;background:none;color:var(--wh);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;width:100%;text-align:left;transition:background .15s;}
+.owner-drawer-item:hover,.owner-drawer-item.on{background:rgba(245,158,11,.12);color:var(--gold);}
+.owner-drawer-item .owner-badge{margin-left:auto;}
 .master-mgmt-info{flex:1;}
 .master-mgmt-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:2px;}
 .master-mgmt-meta{font-size:11px;color:var(--mu2);}
-.master-mgmt-actions{display:flex;gap:7px;flex-shrink:0;}
+.master-mgmt-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:nowrap;}
 .owner-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px;}
 .owner-stat{background:var(--card);border:1px solid var(--b2);border-radius:11px;padding:18px;}
 .owner-stat-lbl{font-size:10px;color:var(--mu);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
@@ -1469,6 +1462,7 @@ export default function App() {
   const [rescheduleDate, setRescheduleDate] = useState(null);
   const [rescheduleTime, setRescheduleTime] = useState(null);
   const [ownerTab, setOwnerTab] = useState("masters");
+  const [ownerDrawerOpen, setOwnerDrawerOpen] = useState(false);
   const [ownerMasterForm, setOwnerMasterForm] = useState({ firstName:"", lastName:"", email:"", password:"", role_ru:"", role_lt:"", color:"#e8650a", emoji:"✂️" });
   const [ownerMasterEdit, setOwnerMasterEdit] = useState(null);
   const [ownerFormOpen, setOwnerFormOpen] = useState(false);
@@ -2871,7 +2865,33 @@ export default function App() {
           );
         })()}
         {/* OWNER PANEL */}
-        {/* MASTER FORM — outside IIFE so onSave always has fresh closure */}
+        {/* OWNER MOBILE BUBBLE + DRAWER */}
+        {page==="owner"&&isOwner&&(
+          <>
+            <button className="owner-bubble" onClick={()=>setOwnerDrawerOpen(true)}>☰</button>
+            {ownerDrawerOpen&&<>
+              <div className="owner-drawer-overlay" onClick={()=>setOwnerDrawerOpen(false)}/>
+              <div className="owner-drawer-menu">
+                <div className="owner-drawer-handle"/>
+                {[
+                  {key:"masters",  icon:"✂️", label:t.owner_tab_masters,  badge:masters.length},
+                  {key:"bookings", icon:"📋", label:t.owner_tab_bookings, badge:bookings.length},
+                  {key:"stats",    icon:"📊", label:t.owner_tab_stats},
+                  {key:"reviews",  icon:"⭐", label:t.owner_tab_reviews,  badge:reviews.length},
+                  {key:"subs",     icon:"💳", label:t.owner_tab_subs},
+                  {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
+                ].map(item=>(
+                  <button key={item.key} className={`owner-drawer-item${ownerTab===item.key?" on":""}`}
+                    onClick={()=>{setOwnerTab(item.key);setOwnerDrawerOpen(false);}}>
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                    {item.badge!=null&&<span className="owner-badge">{item.badge}</span>}
+                  </button>
+                ))}
+              </div>
+            </>}
+          </>
+        )}
         {page==="owner"&&isOwner&&ownerFormOpen&&(
           <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
             <div style={{width:"min(540px,98vw)",maxHeight:"90vh",overflowY:"auto"}}>
@@ -2930,7 +2950,7 @@ export default function App() {
                 {ownerTab==="masters"&&(
                   <div>
                     {/* LEFT — master list */}
-                    <div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
                         <div>
                           <div className="stag" style={{color:"var(--gold)"}}>✂️ {lang==="ru"?"Команда":"Komanda"}</div>
