@@ -1369,30 +1369,35 @@ export default function App() {
 
   // ── Firebase Auth — restore session on reload ───────────────────────────
   useEffect(()=>{
+    // Safety timeout — if Firebase takes too long, show the app anyway
+    const timeout = setTimeout(()=>setFbLoading(false), 5000);
+
     const unsub = onAuthStateChanged(fbAuth, async (firebaseUser)=>{
-      if(firebaseUser){
-        // Check if owner
-        if(firebaseUser.email===OWNER.email){ setCur({...OWNER}); setFbLoading(false); return; }
-        // Check masters
-        const masterSnap = await getDoc(doc(fbDb,"masters",firebaseUser.uid));
-        if(masterSnap.exists()){
-          setCur({...masterSnap.data(), uid:firebaseUser.uid});
-          setFbLoading(false); return;
-        }
-        // Check clients
-        const userSnap = await getDoc(doc(fbDb,"users",firebaseUser.uid));
-        if(userSnap.exists()){
-          setCur({...userSnap.data(), uid:firebaseUser.uid});
+      try{
+        if(firebaseUser){
+          if(firebaseUser.email===OWNER.email){ setCur({...OWNER}); clearTimeout(timeout); setFbLoading(false); return; }
+          const masterSnap = await getDoc(doc(fbDb,"masters",firebaseUser.uid));
+          if(masterSnap.exists()){
+            setCur({...masterSnap.data(), uid:firebaseUser.uid});
+            clearTimeout(timeout); setFbLoading(false); return;
+          }
+          const userSnap = await getDoc(doc(fbDb,"users",firebaseUser.uid));
+          if(userSnap.exists()){
+            setCur({...userSnap.data(), uid:firebaseUser.uid});
+          } else {
+            setCur({ name:firebaseUser.displayName||firebaseUser.email, email:firebaseUser.email, role:"client", sub:null, uid:firebaseUser.uid });
+          }
         } else {
-          // Fallback — basic user from Firebase Auth
-          setCur({ name:firebaseUser.displayName||firebaseUser.email, email:firebaseUser.email, role:"client", sub:null, uid:firebaseUser.uid });
+          setCur(null);
         }
-      } else {
+      } catch(e){
+        // Network error — continue without user
         setCur(null);
       }
+      clearTimeout(timeout);
       setFbLoading(false);
     });
-    return ()=>unsub();
+    return ()=>{ unsub(); clearTimeout(timeout); };
   },[]);
 
   // ── Firebase Bookings — real-time sync ─────────────────────────────────
@@ -1883,6 +1888,23 @@ export default function App() {
   };
 
   const mc = masterObj?.color||"var(--or)";
+
+  // Wait for Firebase to restore session before rendering
+  if(fbLoading) return (
+    <div style={{
+      minHeight:"100vh", background:"#0e0a06",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      flexDirection:"column", gap:12
+    }}>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:42,letterSpacing:6,color:"#e8650a"}}>BARBER HUB</div>
+      <div style={{
+        width:40, height:40, borderRadius:"50%",
+        border:"3px solid #e8650a", borderTopColor:"transparent",
+        animation:"spin 0.8s linear infinite"
+      }}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
   return (
     <>
