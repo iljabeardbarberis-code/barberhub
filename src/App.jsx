@@ -1402,11 +1402,15 @@ export default function App() {
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
   useEffect(()=>{
-    // Bookings — real-time
-    const q = query(collection(fbDb,"bookings"), orderBy("date"), orderBy("time"));
-    const unsubBookings = onSnapshot(q, snap=>{
-      setBookings(snap.docs.map(d=>({...d.data(), id:d.id})));
-    }, ()=>{});
+    // Bookings — real-time, no orderBy to avoid composite index requirement
+    const unsubBookings = onSnapshot(collection(fbDb,"bookings"), snap=>{
+      const data = snap.docs.map(d=>({...d.data(), id:d.id}));
+      // Sort client-side
+      data.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.time<b.time?-1:1);
+      setBookings(data);
+    }, (err)=>{
+      console.error("Bookings load error:", err);
+    });
     return ()=>unsubBookings();
   },[]);
   const [reviews, setReviews] = useState([]);
@@ -1493,11 +1497,11 @@ export default function App() {
 
   // ── Load notifications from Firestore ──────────────────────────────────────
   useEffect(()=>{
-    const q = query(collection(fbDb,"notifications"), orderBy("createdAt","desc"));
-    const unsub = onSnapshot(q, snap=>{
-      const firestoreNotifs = snap.docs.map(d=>({...d.data(),id:d.id}));
-      if(firestoreNotifs.length>0) setNotifications(firestoreNotifs);
-    }, ()=>{});
+    const unsub = onSnapshot(collection(fbDb,"notifications"), snap=>{
+      const data = snap.docs.map(d=>({...d.data(),id:d.id}));
+      data.sort((a,b)=>(b.createdAt||"")>(a.createdAt||"")?1:-1);
+      setNotifications(data);
+    }, (err)=>{ console.error("Notifs error:", err); });
     return ()=>unsub();
   },[]);
 
