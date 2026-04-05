@@ -2967,9 +2967,10 @@ export default function App() {
                           <div className="stag" style={{color:"var(--gold)"}}>✂️ {lang==="ru"?"Команда":"Komanda"}</div>
                           <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1}}>{masters.length} {lang==="ru"?"мастеров":"meistrų"}</h2>
                         </div>
-                        {!ownerFormOpen&&<button className="btn b-lg" style={{background:"var(--gold)",color:"var(--bg)",fontWeight:800}}
-                          onClick={()=>{setOwnerMasterEdit(null);setOwnerFormOpen(true);}}>
-                          {t.owner_add_master}
+                        {!ownerFormOpen&&<button
+                          onClick={()=>{setOwnerMasterEdit(null);setOwnerFormOpen(true);}}
+                          style={{width:42,height:42,borderRadius:"50%",background:"var(--gold)",border:"none",cursor:"pointer",fontSize:26,color:"var(--bg)",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 12px rgba(245,158,11,.4)"}}>
+                          +
                         </button>}
                       </div>
                       {masters.map(m=>{
