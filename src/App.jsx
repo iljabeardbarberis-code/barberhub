@@ -488,7 +488,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .nl.g:hover,.nl.g.on{color:var(--gr);background:var(--grd);}
 .nav-r{display:flex;align-items:center;gap:5px;flex-shrink:0;max-width:calc(100vw - 220px);}
 .lang{display:flex;border:1px solid var(--b2);border-radius:7px;overflow:hidden;}
-.lb{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;padding:5px 10px;transition:all .18s;}
+.lb{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;padding:5px 8px;transition:all .18s;}
 .lb.on{background:var(--or);color:var(--bg);}
 .ubar{display:flex;align-items:center;gap:7px;}
 .udot{width:7px;height:7px;border-radius:50%;animation:pulse 2s infinite;}
@@ -767,7 +767,9 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
 /* ── MOBILE RESPONSIVE ───────────────────────────────────────────────────── */
 @media(max-width:600px){
-  .nav{padding:0 12px;height:50px;flex-wrap:nowrap;overflow:hidden;}
+  .nav{padding:0 10px;height:50px;flex-wrap:nowrap;overflow:hidden;}
+  .lang{border-radius:5px;}
+  .lb{padding:4px 6px;font-size:10px;}
   .nav-logo{font-size:16px;letter-spacing:2px;}
   .nav-links{display:none!important;}
   .nav-burger{display:flex!important;}
@@ -1337,7 +1339,10 @@ function MasterFormModal({ isEdit, initialData, colors, onSave, onCancel, t }) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState("ru");
+  const [lang, setLangRaw] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_lang")||"lt"; }catch(e){ return "lt"; }
+  });
+  const setLang = (l) => { setLangRaw(l); try{ localStorage.setItem("barberhub_lang",l); }catch(e){} };
   const t = T[lang];
   const SERVICES = lang==="ru" ? SERVICES_RU : SERVICES_LT;
 
