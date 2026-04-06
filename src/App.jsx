@@ -489,6 +489,8 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .nav-r{display:flex;align-items:center;gap:5px;flex-shrink:0;max-width:calc(100vw - 220px);}
 .lang{display:flex;border:1px solid var(--b2);border-radius:7px;overflow:hidden;}
 .lb{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;padding:5px 8px;transition:all .18s;}
+.lb.on{color:var(--wh);background:var(--or);border-radius:5px;}
+.lang-mobile{display:none;border:1px solid var(--b2);border-radius:7px;overflow:hidden;margin:8px 0;}
 .lb.on{background:var(--or);color:var(--bg);}
 .ubar{display:flex;align-items:center;gap:7px;}
 .udot{width:7px;height:7px;border-radius:50%;animation:pulse 2s infinite;}
@@ -768,8 +770,8 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 /* ── MOBILE RESPONSIVE ───────────────────────────────────────────────────── */
 @media(max-width:600px){
   .nav{padding:0 10px;height:50px;flex-wrap:nowrap;overflow:hidden;}
-  .lang{border-radius:5px;}
-  .lb{padding:4px 6px;font-size:10px;}
+  .lang{display:none!important;}
+  .lang-mobile{display:flex!important;}
   .nav-logo{font-size:16px;letter-spacing:2px;}
   .nav-links{display:none!important;}
   .nav-burger{display:flex!important;}
@@ -2138,6 +2140,10 @@ export default function App() {
           <div className="drawer-overlay" onClick={()=>setNavOpen(false)}/>
           <div className="drawer">
             <button className="drawer-close" onClick={()=>setNavOpen(false)}>✕</button>
+            <div className="lang-mobile">
+              <button className={`lb${lang==="ru"?" on":""}`} onClick={()=>setLang("ru")}>RU</button>
+              <button className={`lb${lang==="lt"?" on":""}`} onClick={()=>setLang("lt")}>LT</button>
+            </div>
             <button className={`nl${page==="home"?" on":""}`} onClick={()=>{setPage("home");setNavOpen(false);}}>{t.home}</button>
             <button className="nl" onClick={()=>{setPage("home");setNavOpen(false);setTimeout(()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"}),100);}}>{t.services}</button>
             <button className="nl" onClick={()=>{setPage("home");setNavOpen(false);setTimeout(()=>document.getElementById("msts")?.scrollIntoView({behavior:"smooth"}),100);}}>{t.masters}</button>
