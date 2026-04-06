@@ -1437,6 +1437,14 @@ export default function App() {
     return ()=>unsubBookings();
   },[]);
   const [reviews, setReviews] = useState([]);
+
+  // Load reviews from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"reviews"), snap=>{
+      setReviews(snap.docs.map(d=>({...d.data(), id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
   const [reviewForm, setReviewForm] = useState({ masterId:"", rating:5, text:"" });
   const [reviewDone, setReviewDone] = useState(false);
   // Post-visit popup
@@ -1472,9 +1480,12 @@ export default function App() {
   const [bkLoading, setBkLoading] = useState(false);
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
-  const [mTab, setMTab] = useState("calendar");
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
-  const [calZoom, setCalZoom] = useState(32); // slot height in px - compact default
+  const [calZoom, setCalZoom] = useState(32);
+  const [mTab, setMTabRaw] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_mTab")||"calendar"; }catch(e){ return "calendar"; }
+  });
+  const setMTab = (t) => { setMTabRaw(t); try{ localStorage.setItem("barberhub_mTab",t); }catch(e){} };
   const [widgetBtnVisible, setWidgetBtnVisible] = useState(true);
   const lastScrollY = useRef(0);
   useEffect(()=>{
@@ -1493,7 +1504,10 @@ export default function App() {
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
   const [rescheduleDate, setRescheduleDate] = useState(null);
   const [rescheduleTime, setRescheduleTime] = useState(null);
-  const [ownerTab, setOwnerTab] = useState("masters");
+  const [ownerTab, setOwnerTabRaw] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_ownerTab")||"masters"; }catch(e){ return "masters"; }
+  });
+  const setOwnerTab = (t) => { setOwnerTabRaw(t); try{ localStorage.setItem("barberhub_ownerTab",t); }catch(e){} };
   const [ownerDrawerOpen, setOwnerDrawerOpen] = useState(false);
   const [ownerMasterForm, setOwnerMasterForm] = useState({ firstName:"", lastName:"", email:"", password:"", role_ru:"", role_lt:"", color:"#e8650a", emoji:"✂️" });
   const [ownerMasterEdit, setOwnerMasterEdit] = useState(null);
@@ -1726,9 +1740,20 @@ export default function App() {
     reviews.filter(r => String(r.masterId)===String(masterId) && r.rating>=4 && r.showPublic!==false && r.text)
            .sort((a,b)=>b.rating-a.rating);
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if(!reviewForm.masterId||!reviewForm.text.trim()) return;
-    setReviews(p=>[...p,{id:Date.now(),masterId:parseInt(reviewForm.masterId),clientName:cur?.name||"Аноним",rating:reviewForm.rating,text:reviewForm.text.trim(),date:todayStr}]);
+    const rev = {
+      masterId:String(reviewForm.masterId),
+      clientName:cur?.name||"Аноним",
+      rating:reviewForm.rating,
+      text:reviewForm.text.trim(),
+      date:todayStr,
+      showPublic:true,
+      createdAt:new Date().toISOString()
+    };
+    try{ await addDoc(collection(fbDb,"reviews"), rev); }catch(e){
+      setReviews(p=>[...p,{...rev,id:Date.now()}]);
+    }
     setReviewDone(true);
     setTimeout(()=>{setReviewDone(false);setReviewForm({masterId:"",rating:5,text:""});},3000);
   };
@@ -1803,6 +1828,8 @@ export default function App() {
     try{ localStorage.removeItem("barberhub_owner"); }catch(e){}
     try{ localStorage.removeItem("barberhub_master"); }catch(e){}
     try{ localStorage.removeItem("barberhub_page"); }catch(e){}
+    try{ localStorage.removeItem("barberhub_mTab"); }catch(e){}
+    try{ localStorage.removeItem("barberhub_ownerTab"); }catch(e){}
     try{ await signOut(fbAuth); }catch(e){}
     setCur(null);setPageRaw("home");
   };
@@ -1958,9 +1985,12 @@ export default function App() {
     }
     setDragId(null); setDragOver(null);
   };
-  const saveMasterProfile=(data)=>{
-    setMasters(p=>p.map(m=>m.id===masterObj.id?{...m,...data}:m));
+  const saveMasterProfile=async(data)=>{
+    const updated = {...masterObj,...data};
+    setMasters(p=>p.map(m=>m.id===masterObj.id?updated:m));
     if(data.firstName) setCur(c=>({...c,name:data.firstName}));
+    // Save to Firestore so discount is visible to all users
+    try{ await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated); }catch(e){}
   };
 
   // Owner: create master
@@ -2012,6 +2042,25 @@ export default function App() {
     setOwnerMasterEdit(master.id);
     setOwnerFormOpen(true); setOwnerFormErr("");
   };
+
+  // Validate and correct page based on user role after auth restore
+  useEffect(()=>{
+    if(fbLoading) return;
+    if(!cur){ 
+      // Not logged in — only allow public pages
+      if(["master","owner","my","book"].includes(page)) setPage("home");
+      return;
+    }
+    if(cur.role==="master"){
+      // Master should be on master page
+      if(["my","owner"].includes(page)) setPage("master");
+    } else if(cur.role==="owner"){
+      if(["my","master"].includes(page)) setPage("owner");
+    } else {
+      // Client — not on master/owner pages
+      if(["master","owner"].includes(page)) setPage("home");
+    }
+  },[fbLoading, cur?.role]);
 
   const mc = masterObj?.color||"var(--or)";
 
@@ -3806,20 +3855,21 @@ export default function App() {
                 {/* Footer */}
                 <div className="visit-footer">
                   <button className="btn b-or b-lg" style={{background:visitReview.masterObj?.color||"var(--or)",color:"var(--bg)",fontWeight:800}}
-                    onClick={()=>{
-                      // Always save rating to master's stats
-                      // Only save to public reviews if there's text (or rating is very high)
+                    onClick={async()=>{
                       const hasText = visitText.trim().length > 0;
-                      setReviews(p=>[...p,{
-                        id:Date.now(),
-                        masterId:visitReview.masterId,
+                      const rev = {
+                        masterId:String(visitReview.masterId),
                         clientName:cur?.name||visitReview.clientName||"Клиент",
                         rating:visitRating,
                         text:hasText ? visitText.trim() : (visitRating>=5 ? (lang==="ru"?"Отличный визит!":"Puikus vizitas!") : ""),
                         date:todayStr,
-                        fromVisit:true, // mark as from post-visit popup
-                        showPublic: hasText || visitRating>=4, // show on homepage only if text or 4★+
-                      }]);
+                        fromVisit:true,
+                        showPublic: hasText || visitRating>=4,
+                        createdAt:new Date().toISOString()
+                      };
+                      try{ await addDoc(collection(fbDb,"reviews"), rev); }catch(e){
+                        setReviews(p=>[...p,{...rev,id:Date.now()}]);
+                      }
                       setVisitSubmitted(true);
                     }}>
                     {t.visit_submit} · {[,"⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"][visitRating]}
