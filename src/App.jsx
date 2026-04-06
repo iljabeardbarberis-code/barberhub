@@ -3339,7 +3339,10 @@ export default function App() {
                               <div style={{fontSize:12,color:"var(--mu2)",lineHeight:1.6,fontStyle:"italic",marginBottom:5}}>"{r.text}"</div>
                               {m&&<div style={{fontSize:10,color:m.color,fontWeight:700}}>{m.emoji} {m.firstName} {m.lastName}</div>}
                             </div>
-                            <button className="btn b-red b-sm" style={{flexShrink:0}} onClick={()=>setReviews(p=>p.filter(x=>x.id!==r.id))} title={t.owner_review_delete}>🗑</button>
+                            <button className="btn b-red b-sm" style={{flexShrink:0}} onClick={async()=>{
+                              setReviews(p=>p.filter(x=>x.id!==r.id));
+                              try{ await deleteDoc(doc(fbDb,"reviews",String(r.id))); }catch(e){}
+                            }} title={t.owner_review_delete}>🗑</button>
                           </div>
                         );
                       })
