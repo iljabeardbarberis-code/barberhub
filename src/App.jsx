@@ -1431,8 +1431,9 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
-  const [rescheduleBooking, setRescheduleBooking] = useState(null); // booking being rescheduled
+  const [rescheduleTarget, setRescheduleTarget] = useState(null); // booking being rescheduled by client
   const [rescheduleDate, setRescheduleDate] = useState(null);
+  const [rescheduleTime2, setRescheduleTime2] = useState(null);
   const [rescheduleTime, setRescheduleTime] = useState(null);
   const [bookings, setBookings] = useState([]);
 
@@ -2789,7 +2790,7 @@ export default function App() {
               const s=resolveBooking(b),m=masters.find(x=>String(x.id)===String(b.masterId));
               const isCancelled = b.status==="cancelled";
               const isDone = b.status==="done";
-              const isRescheduling = rescheduleBooking?.id === b.id;
+              const isRescheduling = rescheduleTarget?.id === b.id;
               return(
                 <div key={b.id}>
                   <div className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
@@ -2800,24 +2801,31 @@ export default function App() {
                         ❌ {lang==="ru"?"Отменено":"Atšaukta"}{b.cancelledBy?` · ${b.cancelledBy}`:""}
                       </div>}
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end"}}>
+                    <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
                       <span className={`badge ${isDone?"bgr":isCancelled?"b-red":"bor"}`} style={isCancelled?{background:"var(--red)",color:"#fff"}:{}}>
                         {isDone?(lang==="ru"?"Выполнено":"Atlikta"):isCancelled?(lang==="ru"?"Отменено":"Atšaukta"):t.confirmed}
                       </span>
                       {!isCancelled&&!isDone&&(
-                        <button className="btn b-card b-sm" style={{fontSize:10}}
+                        <button
                           onClick={()=>{
-                            if(isRescheduling){ setRescheduleBooking(null); }
-                            else { setRescheduleBooking(b); setRescheduleDate(null); setRescheduleTime(null); }
+                            if(isRescheduling){ setRescheduleTarget(null); }
+                            else { setRescheduleTarget(b); setRescheduleDate(null); setRescheduleTime2(null); }
+                          }}
+                          style={{
+                            background:isRescheduling?"var(--card2)":"var(--or)",
+                            color:isRescheduling?"var(--mu)":"var(--bg)",
+                            border:"none",borderRadius:8,padding:"6px 12px",
+                            fontSize:12,fontWeight:700,cursor:"pointer",
+                            whiteSpace:"nowrap"
                           }}>
-                          {isRescheduling?(lang==="ru"?"✕ Закрыть":"✕ Uždaryti"):(lang==="ru"?"📅 Перенести":"📅 Perkelti")}
+                          {isRescheduling?"✕ Закрыть":"📅 Перенести"}
                         </button>
                       )}
                     </div>
                   </div>
 
                   {/* Reschedule panel */}
-                  {isRescheduling&&(
+                  {isRescheduling&&rescheduleTarget&&(
                     <div style={{background:"var(--card2)",border:"1px solid var(--b2)",borderRadius:10,padding:14,marginBottom:8,marginTop:-4}}>
                       <div style={{fontSize:12,fontWeight:700,marginBottom:10,color:"var(--or)"}}>
                         📅 {lang==="ru"?"Выберите новую дату и время":"Pasirinkite naują datą ir laiką"}
@@ -2832,7 +2840,7 @@ export default function App() {
                             <button key={ds} className={`dbt${rescheduleDate===ds?" on":""}`}
                               style={{opacity:isSalonClosed?.4:1}}
                               disabled={isSalonClosed}
-                              onClick={()=>{setRescheduleDate(ds);setRescheduleTime(null);}}>
+                              onClick={()=>{setRescheduleDate(ds);setRescheduleTime2(null);}}>
                               {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
                             </button>
                           );
@@ -2842,35 +2850,35 @@ export default function App() {
                       {rescheduleDate&&(
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
                           {HOURS.map(h=>{
-                            const status = getSlotStatus(b.masterId, rescheduleDate, h, b.serviceIds||[b.serviceId], b.id);
+                            const status = getSlotStatus(rescheduleTarget.masterId, rescheduleDate, h, rescheduleTarget.serviceIds||[rescheduleTarget.serviceId], rescheduleTarget.id);
                             const isFree = status==="free";
                             return(
                               <button key={h} className={`tbt${rescheduleTime===h?" on":""}`}
-                                style={{opacity:isFree?1:.3,background:rescheduleTime===h?"var(--or)":isFree?"var(--card)":"var(--card2)",cursor:isFree?"pointer":"not-allowed"}}
+                                style={{opacity:isFree?1:.3,background:rescheduleTime2===h?"var(--or)":isFree?"var(--card)":"var(--card2)",cursor:isFree?"pointer":"not-allowed"}}
                                 disabled={!isFree}
-                                onClick={()=>isFree&&setRescheduleTime(h)}>
+                                onClick={()=>isFree&&setRescheduleTime2(h)}>
                                 {h}
                               </button>
                             );
                           })}
                         </div>
                       )}
-                      {rescheduleDate&&rescheduleTime&&(
+                      {rescheduleDate&&rescheduleTime2&&(
                         <button className="btn b-or b-full" onClick={async()=>{
                           try{
-                            await updateDoc(doc(fbDb,"bookings",b.id),{
+                            await updateDoc(doc(fbDb,"bookings",rescheduleTarget.id),{
                               date:rescheduleDate,
-                              time:rescheduleTime,
+                              time:rescheduleTime2,
                               rescheduledAt:new Date().toISOString()
                             });
                             addNotification("rescheduled",
                               `${cur.name} перенёс запись на ${rescheduleDate} ${rescheduleTime}`,
-                              b.masterId, true
+                              rescheduleTarget.masterId, true
                             );
-                            setRescheduleBooking(null);
+                            setRescheduleTarget(null);
                           }catch(e){ alert(lang==="ru"?"Ошибка. Попробуйте снова.":"Klaida."); }
                         }}>
-                          ✓ {lang==="ru"?`Перенести на ${rescheduleDate} ${rescheduleTime}`:`Perkelti į ${rescheduleDate} ${rescheduleTime}`}
+                          ✓ {lang==="ru"?`Перенести на ${rescheduleDate} ${rescheduleTime2}`:`Perkelti į ${rescheduleDate} ${rescheduleTime2}`}
                         </button>
                       )}
                     </div>
