@@ -1431,9 +1431,8 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
-  const [rescheduleTarget, setRescheduleTarget] = useState(null); // booking being rescheduled by client
+  const [clientReschedule, setClientReschedule] = useState(null);
   const [rescheduleDate, setRescheduleDate] = useState(null);
-  const [rescheduleTime2, setRescheduleTime2] = useState(null);
   const [rescheduleTime, setRescheduleTime] = useState(null);
   const [bookings, setBookings] = useState([]);
 
@@ -2790,7 +2789,7 @@ export default function App() {
               const s=resolveBooking(b),m=masters.find(x=>String(x.id)===String(b.masterId));
               const isCancelled = b.status==="cancelled";
               const isDone = b.status==="done";
-              const isRescheduling = rescheduleTarget?.id === b.id;
+              const isRescheduling = clientReschedule?.id === b.id;
               return(
                 <div key={b.id}>
                   <div className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
@@ -2808,8 +2807,8 @@ export default function App() {
                       {!isCancelled&&!isDone&&(
                         <button
                           onClick={()=>{
-                            if(isRescheduling){ setRescheduleTarget(null); }
-                            else { setRescheduleTarget(b); setRescheduleDate(null); setRescheduleTime2(null); }
+                            if(isRescheduling){ setClientReschedule(null); }
+                            else { setClientReschedule(b); setRescheduleDate(null); setRescheduleTime(null); }
                           }}
                           style={{
                             background:isRescheduling?"var(--card2)":"var(--or)",
@@ -2825,7 +2824,7 @@ export default function App() {
                   </div>
 
                   {/* Reschedule panel */}
-                  {isRescheduling&&rescheduleTarget&&(
+                  {isRescheduling&&clientReschedule&&(
                     <div style={{background:"var(--card2)",border:"1px solid var(--b2)",borderRadius:10,padding:14,marginBottom:8,marginTop:-4}}>
                       <div style={{fontSize:12,fontWeight:700,marginBottom:10,color:"var(--or)"}}>
                         📅 {lang==="ru"?"Выберите новую дату и время":"Pasirinkite naują datą ir laiką"}
@@ -2840,7 +2839,7 @@ export default function App() {
                             <button key={ds} className={`dbt${rescheduleDate===ds?" on":""}`}
                               style={{opacity:isSalonClosed?.4:1}}
                               disabled={isSalonClosed}
-                              onClick={()=>{setRescheduleDate(ds);setRescheduleTime2(null);}}>
+                              onClick={()=>{setRescheduleDate(ds);setRescheduleTime(null);}}>
                               {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
                             </button>
                           );
@@ -2850,35 +2849,35 @@ export default function App() {
                       {rescheduleDate&&(
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
                           {HOURS.map(h=>{
-                            const status = getSlotStatus(rescheduleTarget.masterId, rescheduleDate, h, rescheduleTarget.serviceIds||[rescheduleTarget.serviceId], rescheduleTarget.id);
+                            const status = getSlotStatus(clientReschedule.masterId, rescheduleDate, h, clientReschedule.serviceIds||[clientReschedule.serviceId], clientReschedule.id);
                             const isFree = status==="free";
                             return(
                               <button key={h} className={`tbt${rescheduleTime===h?" on":""}`}
-                                style={{opacity:isFree?1:.3,background:rescheduleTime2===h?"var(--or)":isFree?"var(--card)":"var(--card2)",cursor:isFree?"pointer":"not-allowed"}}
+                                style={{opacity:isFree?1:.3,background:rescheduleTime===h?"var(--or)":isFree?"var(--card)":"var(--card2)",cursor:isFree?"pointer":"not-allowed"}}
                                 disabled={!isFree}
-                                onClick={()=>isFree&&setRescheduleTime2(h)}>
+                                onClick={()=>isFree&&setRescheduleTime(h)}>
                                 {h}
                               </button>
                             );
                           })}
                         </div>
                       )}
-                      {rescheduleDate&&rescheduleTime2&&(
+                      {rescheduleDate&&rescheduleTime&&(
                         <button className="btn b-or b-full" onClick={async()=>{
                           try{
-                            await updateDoc(doc(fbDb,"bookings",rescheduleTarget.id),{
+                            await updateDoc(doc(fbDb,"bookings",clientReschedule.id),{
                               date:rescheduleDate,
-                              time:rescheduleTime2,
+                              time:rescheduleTime,
                               rescheduledAt:new Date().toISOString()
                             });
                             addNotification("rescheduled",
                               `${cur.name} перенёс запись на ${rescheduleDate} ${rescheduleTime}`,
-                              rescheduleTarget.masterId, true
+                              clientReschedule.masterId, true
                             );
-                            setRescheduleTarget(null);
+                            setClientReschedule(null);
                           }catch(e){ alert(lang==="ru"?"Ошибка. Попробуйте снова.":"Klaida."); }
                         }}>
-                          ✓ {lang==="ru"?`Перенести на ${rescheduleDate} ${rescheduleTime2}`:`Perkelti į ${rescheduleDate} ${rescheduleTime2}`}
+                          ✓ {lang==="ru"?`Перенести на ${rescheduleDate} ${rescheduleTime}`:`Perkelti į ${rescheduleDate} ${rescheduleTime}`}
                         </button>
                       )}
                     </div>
