@@ -1419,7 +1419,9 @@ export default function App() {
   // bookings loaded below after state declaration
   const [modal, setModal] = useState(null);
   const [authMode, setAuthMode] = useState("login");
-  const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"" });
+  const [authForm, setAuthForm] = useState({ name:"", email:"", phone:"", password:"", confirmPassword:"" });
+  const [showPass, setShowPass] = useState(false);
+  const [confirmPassErr, setConfirmPassErr] = useState("");
   const [authErr, setAuthErr] = useState("");
   const [page, setPageRaw] = useState(()=>{
     try{ return localStorage.getItem("barberhub_page")||"home"; }catch(e){ return "home"; }
@@ -1821,7 +1823,8 @@ export default function App() {
         else setAuthErr(e.message);
       }
     } else {
-      if(!authForm.name||!authForm.email||!authForm.phone||!authForm.password) return setAuthErr(t.err_fill);
+      if(!authForm.name||!authForm.email||!authForm.phone||!authForm.password||!authForm.confirmPassword) return setAuthErr(t.err_fill);
+      if(authForm.password!==authForm.confirmPassword) return setAuthErr(lang==="ru"?"Пароли не совпадают":"Slaptažodžiai nesutampa");
       if(masters.find(m=>m.email===authForm.email)||authForm.email===OWNER.email) return setAuthErr(t.err_exists);
       try{
         const cred = await createUserWithEmailAndPassword(fbAuth,authForm.email,authForm.password);
@@ -2034,8 +2037,10 @@ export default function App() {
   };
 
   // Owner: delete master
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const ownerDeleteMaster = async (id) => {
-    if(!window.confirm(t.owner_confirm_delete)) return;
+    if(confirmDeleteId!==id){ setConfirmDeleteId(id); setTimeout(()=>setConfirmDeleteId(null),3000); return; }
+    setConfirmDeleteId(null);
     setMasters(p=>p.filter(m=>m.id!==id));
     try{ await deleteDoc(doc(fbDb,"masters",id)); }catch(e){}
   };
@@ -3395,7 +3400,10 @@ export default function App() {
                             </div>
                             <div className="master-mgmt-actions">
                               <button className="btn b-card b-sm" onClick={()=>ownerOpenEdit(m)}>{t.owner_edit_master}</button>
-                              <button className="btn b-red b-sm" onClick={()=>ownerDeleteMaster(m.id)}>🗑</button>
+                              <button className="btn b-red b-sm" onClick={()=>ownerDeleteMaster(m.id)}
+                                style={{background:confirmDeleteId===m.id?"var(--red)":"",opacity:1}}>
+                                {confirmDeleteId===m.id?(lang==="ru"?"Удалить?":"Ištrinti?"):"🗑"}
+                              </button>
                             </div>
                           </div>
                         );
@@ -3801,7 +3809,29 @@ export default function App() {
             {authMode==="register"&&<div className="field"><label>{t.f_name}</label><input value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))} placeholder="Иван"/></div>}
             <div className="field"><label>{t.f_email}</label><input value={authForm.email} onChange={e=>setAuthForm(f=>({...f,email:e.target.value}))} placeholder="email@example.com"/></div>
             {authMode==="register"&&<div className="field"><label>{t.f_phone}</label><input value={authForm.phone} onChange={e=>setAuthForm(f=>({...f,phone:e.target.value}))} placeholder="+370 600 00000"/></div>}
-            <div className="field"><label>{t.f_pass}</label><input type="password" value={authForm.password} onChange={e=>setAuthForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAuth()} placeholder="••••••••"/></div>
+            <div className="field">
+              <label>{t.f_pass}</label>
+              <div style={{position:"relative"}}>
+                <input type={showPass?"text":"password"} value={authForm.password} onChange={e=>setAuthForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAuth()} placeholder="••••••••" style={{paddingRight:40}}/>
+                <button onClick={()=>setShowPass(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:16,padding:0}}>
+                  {showPass?"🙈":"👁"}
+                </button>
+              </div>
+            </div>
+            {authMode==="register"&&(
+              <div className="field">
+                <label>{lang==="ru"?"Повторите пароль":"Pakartokite slaptažodį"}</label>
+                <div style={{position:"relative"}}>
+                  <input type={showPass?"text":"password"} value={authForm.confirmPassword} onChange={e=>setAuthForm(f=>({...f,confirmPassword:e.target.value}))} placeholder="••••••••" style={{paddingRight:40,borderColor:authForm.confirmPassword&&authForm.confirmPassword!==authForm.password?"var(--red)":""}}/>
+                  <button onClick={()=>setShowPass(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:16,padding:0}}>
+                    {showPass?"🙈":"👁"}
+                  </button>
+                </div>
+                {authForm.confirmPassword&&authForm.confirmPassword!==authForm.password&&(
+                  <div style={{fontSize:11,color:"var(--red)",marginTop:4}}>{lang==="ru"?"Пароли не совпадают":"Slaptažodžiai nesutampa"}</div>
+                )}
+              </div>
+            )}
             <button className="btn b-or b-full b-lg" onClick={doAuth}>{authMode==="login"?t.login:t.register}</button>
             <div className="m-switch">{authMode==="login"?<>{t.no_acc} <button onClick={()=>{setAuthMode("register");setAuthErr("");}}>{t.reg_link}</button></>:<>{t.has_acc} <button onClick={()=>{setAuthMode("login");setAuthErr("");}}>{t.login_link}</button></>}</div>
             {authMode==="login"&&<div style={{marginTop:8,fontSize:11,color:"var(--mu)",textAlign:"center"}}>
