@@ -1431,6 +1431,9 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
+  const [rescheduleBooking, setRescheduleBooking] = useState(null); // booking being rescheduled
+  const [rescheduleDate, setRescheduleDate] = useState(null);
+  const [rescheduleTime, setRescheduleTime] = useState(null);
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
@@ -2786,18 +2789,92 @@ export default function App() {
               const s=resolveBooking(b),m=masters.find(x=>String(x.id)===String(b.masterId));
               const isCancelled = b.status==="cancelled";
               const isDone = b.status==="done";
+              const isRescheduling = rescheduleBooking?.id === b.id;
               return(
-                <div key={b.id} className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
-                  <div style={{flex:1}}>
-                    <div className="bk-svc" style={{textDecoration:isCancelled?"line-through":"none"}}>{s?.name||"—"}</div>
-                    <div className="bk-meta">{m?.firstName} {m?.lastName} · {b.date} · {b.time}{b.payment?" · "+(b.payment==="cash"?"💵":"💳"):""}</div>
-                    {isCancelled&&<div style={{fontSize:11,color:"var(--red)",marginTop:3,fontWeight:700}}>
-                      ❌ {lang==="ru"?"Отменено":"Atšaukta"}{b.cancelledBy?` · ${b.cancelledBy}`:""}
-                    </div>}
+                <div key={b.id}>
+                  <div className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
+                    <div style={{flex:1}}>
+                      <div className="bk-svc" style={{textDecoration:isCancelled?"line-through":"none"}}>{s?.name||"—"}</div>
+                      <div className="bk-meta">{m?.firstName} {m?.lastName} · {b.date} · {b.time}{b.payment?" · "+(b.payment==="cash"?"💵":"💳"):""}</div>
+                      {isCancelled&&<div style={{fontSize:11,color:"var(--red)",marginTop:3,fontWeight:700}}>
+                        ❌ {lang==="ru"?"Отменено":"Atšaukta"}{b.cancelledBy?` · ${b.cancelledBy}`:""}
+                      </div>}
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end"}}>
+                      <span className={`badge ${isDone?"bgr":isCancelled?"b-red":"bor"}`} style={isCancelled?{background:"var(--red)",color:"#fff"}:{}}>
+                        {isDone?(lang==="ru"?"Выполнено":"Atlikta"):isCancelled?(lang==="ru"?"Отменено":"Atšaukta"):t.confirmed}
+                      </span>
+                      {!isCancelled&&!isDone&&(
+                        <button className="btn b-card b-sm" style={{fontSize:10}}
+                          onClick={()=>{
+                            if(isRescheduling){ setRescheduleBooking(null); }
+                            else { setRescheduleBooking(b); setRescheduleDate(null); setRescheduleTime(null); }
+                          }}>
+                          {isRescheduling?(lang==="ru"?"✕ Закрыть":"✕ Uždaryti"):(lang==="ru"?"📅 Перенести":"📅 Perkelti")}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span className={`badge ${isDone?"bgr":isCancelled?"b-red":"bor"}`} style={isCancelled?{background:"var(--red)",color:"#fff"}:{}}>
-                    {isDone?(lang==="ru"?"Выполнено":"Atlikta"):isCancelled?(lang==="ru"?"Отменено":"Atšaukta"):t.confirmed}
-                  </span>
+
+                  {/* Reschedule panel */}
+                  {isRescheduling&&(
+                    <div style={{background:"var(--card2)",border:"1px solid var(--b2)",borderRadius:10,padding:14,marginBottom:8,marginTop:-4}}>
+                      <div style={{fontSize:12,fontWeight:700,marginBottom:10,color:"var(--or)"}}>
+                        📅 {lang==="ru"?"Выберите новую дату и время":"Pasirinkite naują datą ir laiką"}
+                      </div>
+                      {/* Date picker - next 14 days */}
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                        {Array.from({length:14},(_,i)=>{
+                          const d = new Date(); d.setDate(d.getDate()+i+1);
+                          const ds = fmtDate(d);
+                          const isSalonClosed = isDateSalonClosed(ds);
+                          return(
+                            <button key={ds} className={`dbt${rescheduleDate===ds?" on":""}`}
+                              style={{opacity:isSalonClosed?.4:1}}
+                              disabled={isSalonClosed}
+                              onClick={()=>{setRescheduleDate(ds);setRescheduleTime(null);}}>
+                              {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Time slots */}
+                      {rescheduleDate&&(
+                        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
+                          {HOURS.map(h=>{
+                            const status = getSlotStatus(b.masterId, rescheduleDate, h, b.serviceIds||[b.serviceId], b.id);
+                            const isFree = status==="free";
+                            return(
+                              <button key={h} className={`tbt${rescheduleTime===h?" on":""}`}
+                                style={{opacity:isFree?1:.3,background:rescheduleTime===h?"var(--or)":isFree?"var(--card)":"var(--card2)",cursor:isFree?"pointer":"not-allowed"}}
+                                disabled={!isFree}
+                                onClick={()=>isFree&&setRescheduleTime(h)}>
+                                {h}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {rescheduleDate&&rescheduleTime&&(
+                        <button className="btn b-or b-full" onClick={async()=>{
+                          try{
+                            await updateDoc(doc(fbDb,"bookings",b.id),{
+                              date:rescheduleDate,
+                              time:rescheduleTime,
+                              rescheduledAt:new Date().toISOString()
+                            });
+                            addNotification("rescheduled",
+                              `${cur.name} перенёс запись на ${rescheduleDate} ${rescheduleTime}`,
+                              b.masterId, true
+                            );
+                            setRescheduleBooking(null);
+                          }catch(e){ alert(lang==="ru"?"Ошибка. Попробуйте снова.":"Klaida."); }
+                        }}>
+                          ✓ {lang==="ru"?`Перенести на ${rescheduleDate} ${rescheduleTime}`:`Perkelti į ${rescheduleDate} ${rescheduleTime}`}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
