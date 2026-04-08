@@ -3721,51 +3721,149 @@ export default function App() {
                 )}
 
                 {/* STATS TAB */}
-                {ownerTab==="stats"&&(
+                {ownerTab==="stats"&&(()=>{
+                  const [statsMaster, setStatsMaster] = React.useState(null); // null = all
+                  const [statsPeriod, setStatsPeriod] = React.useState("month"); // day/month/year/custom
+                  const [statsDay, setStatsDay] = React.useState(todayStr);
+                  const [statsMonth, setStatsMonth] = React.useState(todayStr.slice(0,7));
+                  const [statsYear, setStatsYear] = React.useState(String(new Date().getFullYear()));
+
+                  const filteredBks = bookings.filter(b=>{
+                    if(b.status==="cancelled") return false;
+                    if(statsMaster && String(b.masterId)!==String(statsMaster)) return false;
+                    if(statsPeriod==="day") return b.date===statsDay;
+                    if(statsPeriod==="month") return b.date?.startsWith(statsMonth);
+                    if(statsPeriod==="year") return b.date?.startsWith(statsYear);
+                    return true;
+                  });
+
+                  const revenue = filteredBks.reduce((a,b)=>a+resolveBooking(b).price,0);
+                  const uniqueClients = new Set(filteredBks.map(b=>b.clientEmail||b.clientName)).size;
+
+                  return(
                   <div>
-                    <div className="stag" style={{color:"var(--gold)"}}>📊 {lang==="ru"?"Общая статистика":"Bendra statistika"}</div>
-                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1,marginBottom:20}}>{lang==="ru"?"СТАТИСТИКА":"STATISTIKA"}</h2>
-                    <div className="owner-stat-grid">
+                    <div className="stag" style={{color:"var(--gold)"}}>📊 {lang==="ru"?"Статистика":"Statistika"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1,marginBottom:16}}>{lang==="ru"?"АНАЛИТИКА":"ANALITIKA"}</h2>
+
+                    {/* Master selector */}
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+                      <button onClick={()=>setStatsMaster(null)}
+                        style={{padding:"6px 14px",borderRadius:20,border:`1px solid ${!statsMaster?"var(--gold)":"var(--b2)"}`,background:!statsMaster?"var(--gold)":"var(--card)",color:!statsMaster?"var(--bg)":"var(--mu2)",fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                        {lang==="ru"?"Все мастера":"Visi meistrai"}
+                      </button>
+                      {masters.map(m=>(
+                        <button key={m.id} onClick={()=>setStatsMaster(String(m.id))}
+                          style={{padding:"6px 14px",borderRadius:20,border:`1px solid ${statsMaster===String(m.id)?m.color:"var(--b2)"}`,background:statsMaster===String(m.id)?m.color+"22":"var(--card)",color:statsMaster===String(m.id)?m.color:"var(--mu2)",fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                          {m.emoji} {m.firstName}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Period selector */}
+                    <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+                      {[["day",lang==="ru"?"День":"Diena"],["month",lang==="ru"?"Месяц":"Mėnuo"],["year",lang==="ru"?"Год":"Metai"],["all",lang==="ru"?"Всё время":"Visas laikas"]].map(([k,lbl])=>(
+                        <button key={k} onClick={()=>setStatsPeriod(k)}
+                          style={{padding:"6px 14px",borderRadius:20,border:`1px solid ${statsPeriod===k?"var(--or)":"var(--b2)"}`,background:statsPeriod===k?"var(--or)":"var(--card)",color:statsPeriod===k?"var(--bg)":"var(--mu2)",fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Date input */}
+                    {statsPeriod==="day"&&(
+                      <div style={{marginBottom:14}}>
+                        <input type="date" value={statsDay} onChange={e=>setStatsDay(e.target.value)}
+                          style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:8,padding:"8px 12px",color:"var(--wh)",fontSize:13}}/>
+                      </div>
+                    )}
+                    {statsPeriod==="month"&&(
+                      <div style={{marginBottom:14}}>
+                        <input type="month" value={statsMonth} onChange={e=>setStatsMonth(e.target.value)}
+                          style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:8,padding:"8px 12px",color:"var(--wh)",fontSize:13}}/>
+                      </div>
+                    )}
+                    {statsPeriod==="year"&&(
+                      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+                        {[2024,2025,2026,2027].map(y=>(
+                          <button key={y} onClick={()=>setStatsYear(String(y))}
+                            style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${statsYear===String(y)?"var(--or)":"var(--b2)"}`,background:statsYear===String(y)?"var(--or)22":"var(--card)",color:statsYear===String(y)?"var(--or)":"var(--mu2)",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                            {y}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Stats cards */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10,marginBottom:20}}>
                       {[
-                        {lbl:t.owner_total_revenue, val:`${allStats.revenue}€`, sub:lang==="ru"?"Выручка всего":"Bendros pajamos"},
-                        {lbl:t.owner_total_bookings, val:allStats.bookings, sub:lang==="ru"?"Всего записей":"Viso rezervacijų"},
-                        {lbl:t.owner_total_clients, val:allStats.clients, sub:lang==="ru"?"Уникальных клиентов":"Unikalių klientų"},
-                        {lbl:t.owner_total_masters, val:allStats.masters, sub:lang==="ru"?"Активных мастеров":"Aktyvių meistrų"},
+                        {lbl:lang==="ru"?"Записей":"Rezervacijų", val:filteredBks.length, icon:"📋", color:"var(--or)"},
+                        {lbl:lang==="ru"?"Выручка":"Pajamos", val:`${revenue}€`, icon:"💰", color:"var(--gr)"},
+                        {lbl:lang==="ru"?"Клиентов":"Klientų", val:uniqueClients, icon:"👥", color:"var(--gold)"},
                       ].map(s=>(
-                        <div key={s.lbl} className="owner-stat">
-                          <div className="owner-stat-lbl">{s.lbl}</div>
-                          <div className="owner-stat-val">{s.val}</div>
-                          <div className="owner-stat-sub">{s.sub}</div>
+                        <div key={s.lbl} style={{background:"var(--card)",border:`1px solid ${s.color}33`,borderRadius:12,padding:"16px",textAlign:"center"}}>
+                          <div style={{fontSize:24,marginBottom:6}}>{s.icon}</div>
+                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:s.color,lineHeight:1}}>{s.val}</div>
+                          <div style={{fontSize:11,color:"var(--mu)",marginTop:4,fontWeight:700,textTransform:"uppercase"}}>{s.lbl}</div>
                         </div>
                       ))}
                     </div>
+
                     {/* Per master breakdown */}
-                    <div className="stag" style={{color:"var(--gold)",marginBottom:12}}>{lang==="ru"?"По мастерам":"Pagal meistrus"}</div>
-                    {masters.map(m=>{
-                      const mBks=bookings.filter(b=>b.masterId===m.id);
-                      const mRev=mBks.reduce((a,b)=>{return a+resolveBooking(b).price;},0);
-                      const{avg,count}=getMasterRating(m.id);
-                      const pct=allStats.revenue>0?(mRev/allStats.revenue)*100:0;
-                      return(
-                        <div key={m.id} style={{background:"var(--card)",border:`1px solid ${m.color}33`,borderRadius:10,padding:"14px 16px",marginBottom:9}}>
-                          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                            <span style={{fontSize:20}}>{m.emoji}</span>
-                            <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:m.color}}>{m.firstName} {m.lastName}</span>
-                            {count>0&&<span style={{fontSize:11,color:"var(--gold)",marginLeft:"auto"}}>⭐ {avg}</span>}
-                          </div>
-                          <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:10}}>
-                            <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>Записей</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:m.color,lineHeight:1}}>{mBks.length}</div></div>
-                            <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>Выручка</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--gr)",lineHeight:1}}>{mRev}€</div></div>
-                            <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>Доля</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--gold)",lineHeight:1}}>{Math.round(pct)}%</div></div>
-                          </div>
-                          <div style={{height:6,background:"var(--border)",borderRadius:3}}>
-                            <div style={{width:`${pct}%`,height:"100%",background:`linear-gradient(90deg,${m.color},var(--gr))`,borderRadius:3,transition:"width .4s"}}/>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {!statsMaster&&(
+                      <>
+                        <div className="stag" style={{color:"var(--gold)",marginBottom:12}}>{lang==="ru"?"По мастерам":"Pagal meistrus"}</div>
+                        {masters.map(m=>{
+                          const mBks = filteredBks.filter(b=>String(b.masterId)===String(m.id));
+                          const mRev = mBks.reduce((a,b)=>a+resolveBooking(b).price,0);
+                          const {avg,count} = getMasterRating(m.id);
+                          const pct = revenue>0?(mRev/revenue)*100:0;
+                          return(
+                            <div key={m.id} style={{background:"var(--card)",border:`1px solid ${m.color}33`,borderRadius:10,padding:"14px 16px",marginBottom:9,cursor:"pointer"}}
+                              onClick={()=>setStatsMaster(String(m.id))}>
+                              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                                <span style={{fontSize:20}}>{m.emoji}</span>
+                                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:m.color}}>{m.firstName} {m.lastName}</span>
+                                {count>0&&<span style={{fontSize:11,color:"var(--gold)",marginLeft:"auto"}}>⭐ {avg}</span>}
+                              </div>
+                              <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:10}}>
+                                <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>{lang==="ru"?"Записей":"Rezerv."}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:m.color,lineHeight:1}}>{mBks.length}</div></div>
+                                <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>{lang==="ru"?"Выручка":"Pajamos"}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--gr)",lineHeight:1}}>{mRev}€</div></div>
+                                <div><div style={{fontSize:10,color:"var(--mu)",fontWeight:800,textTransform:"uppercase"}}>{lang==="ru"?"Доля":"Dalis"}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--gold)",lineHeight:1}}>{Math.round(pct)}%</div></div>
+                              </div>
+                              <div style={{height:6,background:"var(--border)",borderRadius:3}}>
+                                <div style={{width:`${pct}%`,height:"100%",background:`linear-gradient(90deg,${m.color},var(--gr))`,borderRadius:3,transition:"width .4s"}}/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Bookings list for selected period */}
+                    {filteredBks.length>0&&(
+                      <>
+                        <div className="stag" style={{color:"var(--gold)",marginBottom:12,marginTop:8}}>{lang==="ru"?"Записи":"Rezervacijos"}</div>
+                        {filteredBks.sort((a,b)=>a.date<b.date?1:-1).map(b=>{
+                          const m=masters.find(x=>String(x.id)===String(b.masterId));
+                          const s=resolveBooking(b);
+                          return(
+                            <div key={b.id} style={{background:"var(--card)",borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"center",borderLeft:`3px solid ${m?.color||"var(--or)"}`}}>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontWeight:700,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.clientName}</div>
+                                <div style={{fontSize:11,color:"var(--mu2)"}}>{s?.name||"—"} · {b.date} {b.time}</div>
+                              </div>
+                              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--gr)",flexShrink:0}}>{s?.price||0}€</div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {filteredBks.length===0&&(
+                      <div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:24}}>{lang==="ru"?"Нет данных за выбранный период":"Nėra duomenų pasirinktu laikotarpiu"}</div>
+                    )}
                   </div>
-                )}
+                  );
+                })()}
 
                 {/* REVIEWS TAB */}
                 {ownerTab==="reviews"&&(
