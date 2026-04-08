@@ -2091,6 +2091,11 @@ export default function App() {
 
   // Owner: delete master
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [statsMaster, setStatsMaster] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState("month");
+  const [statsDay, setStatsDay] = useState(todayStr);
+  const [statsMonth, setStatsMonth] = useState(todayStr.slice(0,7));
+  const [statsYear, setStatsYear] = useState(String(new Date().getFullYear()));
   const ownerDeleteMaster = async (id) => {
     if(confirmDeleteId!==id){ setConfirmDeleteId(id); setTimeout(()=>setConfirmDeleteId(null),3000); return; }
     setConfirmDeleteId(null);
@@ -3722,12 +3727,6 @@ export default function App() {
 
                 {/* STATS TAB */}
                 {ownerTab==="stats"&&(()=>{
-                  const [statsMaster, setStatsMaster] = React.useState(null); // null = all
-                  const [statsPeriod, setStatsPeriod] = React.useState("month"); // day/month/year/custom
-                  const [statsDay, setStatsDay] = React.useState(todayStr);
-                  const [statsMonth, setStatsMonth] = React.useState(todayStr.slice(0,7));
-                  const [statsYear, setStatsYear] = React.useState(String(new Date().getFullYear()));
-
                   const filteredBks = bookings.filter(b=>{
                     if(b.status==="cancelled") return false;
                     if(statsMaster && String(b.masterId)!==String(statsMaster)) return false;
