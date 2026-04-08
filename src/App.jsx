@@ -1432,8 +1432,6 @@ export default function App() {
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
   const [clientReschedule, setClientReschedule] = useState(null);
-  const [rescheduleDate, setRescheduleDate] = useState(null);
-  const [rescheduleTime, setRescheduleTime] = useState(null);
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
