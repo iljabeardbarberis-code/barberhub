@@ -2186,9 +2186,32 @@ export default function App() {
               <button className="btn b-ghost b-lg" onClick={()=>document.getElementById("svcs")?.scrollIntoView({behavior:"smooth"})}>{t.hero_services}</button>
             </div>
             <div className="hstats">
-              <div><div className="snum">1200+</div><div className="slbl">{t.clients}</div></div>
-              <div><div className="snum">8</div><div className="slbl">{t.years}</div></div>
-              <div><div className="snum">3</div><div className="slbl">{t.masters_count}</div></div>
+              {(()=>{
+                // Total bookings count
+                const totalBookings = bookings.filter(b=>b.status!=="cancelled").length;
+                // Time since September 2024
+                const startDate = new Date(2024, 8, 1);
+                const now = new Date();
+                const totalMonths = (now.getFullYear()-startDate.getFullYear())*12 + (now.getMonth()-startDate.getMonth());
+                const years = Math.floor(totalMonths/12);
+                const months = totalMonths % 12;
+                let timeLabel, timeUnit;
+                if(years === 0){
+                  timeLabel = totalMonths;
+                  timeUnit = lang==="ru"?"мес.":"mėn.";
+                } else if(months === 0){
+                  timeLabel = years;
+                  timeUnit = lang==="ru"?(years===1?"год":years<5?"года":"лет"):"metai";
+                } else {
+                  timeLabel = `${years}.${months}`;
+                  timeUnit = lang==="ru"?"лет":"metai";
+                }
+                return(<>
+                  <div><div className="snum">{totalBookings}</div><div className="slbl">{t.clients}</div></div>
+                  <div><div className="snum">{timeLabel}</div><div className="slbl">{timeUnit}</div></div>
+                  <div><div className="snum">{masters.length}</div><div className="slbl">{t.masters_count}</div></div>
+                </>);
+              })()}
             </div>
           </section>
           <div className="divider"/>
