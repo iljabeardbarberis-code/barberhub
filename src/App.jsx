@@ -770,6 +770,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 /* ── MOBILE RESPONSIVE ───────────────────────────────────────────────────── */
 @media(max-width:600px){
   .nav{padding:0 10px;height:50px;flex-wrap:nowrap;overflow:hidden;}
+  .logout-btn{display:none!important;}
   .lang{display:none!important;}
   .lang-mobile{display:flex!important;}
   .nav-logo{font-size:16px;letter-spacing:2px;}
@@ -1428,6 +1429,8 @@ export default function App() {
     try{ localStorage.setItem("barberhub_page", p); }catch(e){}
   };
   const [navOpen, setNavOpen] = useState(false);
+  const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
+  const [profileSaved, setProfileSaved] = useState(false);
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
@@ -2055,7 +2058,7 @@ export default function App() {
     if(fbLoading) return;
     if(!cur){ 
       // Not logged in — only allow public pages
-      if(["master","owner","my","book"].includes(page)) setPage("home");
+      if(["master","owner","my","book","profile"].includes(page)) setPage("home");
       return;
     }
     if(cur.role==="master"){
@@ -2113,7 +2116,8 @@ export default function App() {
             </div>
             {cur?(
               <>
-                <div className="ubar">
+                <div className="ubar" onClick={()=>!masterObj&&!isOwner&&setPage("profile")}
+                  style={{cursor:!masterObj&&!isOwner?"pointer":"default"}}>
                   <div className="udot" style={{ background:isOwner?"var(--gold)":masterObj?mc:"var(--gr)" }}/>
                   <span className="uname">{cur.name}</span>
                 </div>
@@ -2125,7 +2129,7 @@ export default function App() {
                     </button>
                   </div>
                 )}
-                <button className="btn b-ghost b-sm" onClick={logout}>{t.logout}</button>
+                <button className="btn b-ghost b-sm logout-btn" onClick={logout}>{t.logout}</button>
               </>
             ):(
               <>
@@ -2151,6 +2155,14 @@ export default function App() {
             {cur&&!masterObj&&!isOwner&&<button className={`nl${page==="my"?" on":""}`} onClick={()=>{setPage("my");setNavOpen(false);}}>{t.my_bookings}</button>}
             {masterObj&&<button className={`nl${page==="master"?" on":""}`} onClick={()=>{setPage("master");setNavOpen(false);}}>{t.master_cab}</button>}
             {isOwner&&<button className={`nl${page==="owner"?" on":""}`} style={{color:"var(--gold)"}} onClick={()=>{setPage("owner");setNavOpen(false);}}>👑 {t.owner_panel}</button>}
+            {cur&&!masterObj&&!isOwner&&<>
+              <button className="btn b-card b-full" style={{marginTop:8}} onClick={()=>{setPage("profile");setNavOpen(false);}}>
+                👤 {lang==="ru"?"Мой профиль":"Mano profilis"}
+              </button>
+              <button className="btn b-ghost b-full" style={{marginTop:6,color:"var(--red)"}} onClick={()=>{logout();setNavOpen(false);}}>
+                🚪 {lang==="ru"?"Выйти":"Atsijungti"}
+              </button>
+            </>}
             {!cur&&<><button className="btn b-ghost" style={{marginTop:8}} onClick={()=>{openAuth("login");setNavOpen(false);}}>{t.login}</button>
             <button className="btn b-or" style={{marginTop:6}} onClick={()=>{openAuth("register");setNavOpen(false);}}>{t.register}</button></>}
           </div>
@@ -2710,6 +2722,62 @@ export default function App() {
         )}
 
         {/* MY BOOKINGS */}
+        {/* CLIENT PROFILE PAGE */}
+        {page==="profile"&&cur&&!masterObj&&!isOwner&&(
+          <section className="sec" style={{maxWidth:480,margin:"0 auto"}}>
+            <div className="stag">{lang==="ru"?"МОЙ ПРОФИЛЬ":"MANO PROFILIS"}</div>
+            <h2 className="stitle" style={{marginBottom:24}}>{lang==="ru"?"Профиль":"Profilis"}</h2>
+            {/* Avatar */}
+            <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:28,padding:"20px",background:"var(--card)",borderRadius:14,border:"1px solid var(--b2)"}}>
+              <div style={{width:64,height:64,borderRadius:"50%",background:"var(--gr)22",border:"2px solid var(--gr)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:800,color:"var(--gr)",flexShrink:0}}>
+                {cur.name?.[0]?.toUpperCase()||"?"}
+              </div>
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>{cur.name}</div>
+                <div style={{fontSize:12,color:"var(--mu2)"}}>{cur.email}</div>
+                <div style={{fontSize:11,color:"var(--gr)",marginTop:4,fontWeight:700}}>● {lang==="ru"?"Клиент":"Klientas"}</div>
+              </div>
+            </div>
+            {/* Edit form */}
+            <div style={{background:"var(--card)",borderRadius:14,border:"1px solid var(--b2)",padding:20,marginBottom:16}}>
+              <div style={{fontWeight:700,marginBottom:16,fontSize:14}}>{lang==="ru"?"Редактировать профиль":"Redaguoti profilį"}</div>
+              <div className="field"><label>{lang==="ru"?"Имя":"Vardas"}</label>
+                <input defaultValue={cur.name||""} onChange={e=>setProfileEdit(p=>({...p,name:e.target.value}))} placeholder={lang==="ru"?"Ваше имя":"Jūsų vardas"}/></div>
+              <div className="field"><label>{lang==="ru"?"Телефон":"Telefonas"}</label>
+                <input defaultValue={cur.phone||""} onChange={e=>setProfileEdit(p=>({...p,phone:e.target.value}))} placeholder="+370 600 00000" type="tel"/></div>
+              <div className="field"><label>Email</label>
+                <input value={cur.email||""} disabled style={{opacity:.5}}/></div>
+              {profileSaved&&<div style={{color:"var(--gr)",fontSize:12,marginBottom:8,fontWeight:700}}>✓ {lang==="ru"?"Сохранено!":"Išsaugota!"}</div>}
+              <button className="btn b-or b-full" style={{marginTop:8}} onClick={async()=>{
+                const name = profileEdit.name||cur.name;
+                const phone = profileEdit.phone||cur.phone||"";
+                setCur(c=>({...c,name,phone}));
+                try{
+                  if(cur.uid) await import("firebase/firestore").then(async({doc,updateDoc})=>{
+                    const {db:fdb} = await import("./firebase.js");
+                    await updateDoc(doc(fdb,"users",cur.uid),{name,phone});
+                  });
+                  // Update localStorage if master
+                  const saved = localStorage.getItem("barberhub_master");
+                  if(saved){ const d=JSON.parse(saved); localStorage.setItem("barberhub_master",JSON.stringify({...d,name,phone})); }
+                }catch(e){}
+                setProfileSaved(true);
+                setTimeout(()=>setProfileSaved(false),2500);
+              }}>
+                {lang==="ru"?"Сохранить":"Išsaugoti"}
+              </button>
+            </div>
+            {/* My bookings link */}
+            <button className="btn b-card b-full" style={{marginBottom:10}} onClick={()=>setPage("my")}>
+              📋 {lang==="ru"?"Мои записи":"Mano įrašai"}
+            </button>
+            {/* Logout */}
+            <button className="btn b-ghost b-full" style={{color:"var(--red)",borderColor:"var(--red)"}} onClick={logout}>
+              🚪 {lang==="ru"?"Выйти из аккаунта":"Atsijungti"}
+            </button>
+          </section>
+        )}
+
         {page==="my"&&(
           <section className="sec">
             <div className="stag">{t.my_bookings}</div>
