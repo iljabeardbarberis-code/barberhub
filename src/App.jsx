@@ -937,7 +937,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .owner-icon{font-size:14px;width:18px;text-align:center;}
 .owner-badge{margin-left:auto;background:var(--gold);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
 .owner-con{flex:1;overflow:auto;padding:24px;}
-.master-mgmt-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;transition:border-color .18s;overflow:hidden;}
+.master-mgmt-card{background:var(--card);border:1px solid var(--b2);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:8px;transition:border-color .18s;overflow:hidden;}
 .master-mgmt-card:hover{border-color:var(--b2);}
 /* Owner mobile bubble */
 .owner-bubble{display:none!important;}
@@ -949,9 +949,9 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .owner-drawer-item:hover,.owner-drawer-item.on{background:rgba(245,158,11,.12);color:var(--gold);}
 .owner-drawer-item .owner-badge{margin-left:auto;}
 .master-mgmt-info{flex:1;}
-.master-mgmt-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:2px;}
+.master-mgmt-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:1px;}
 .master-mgmt-meta{font-size:11px;color:var(--mu2);}
-.master-mgmt-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:nowrap;}
+.master-mgmt-actions{display:flex;gap:4px;flex-shrink:0;flex-wrap:nowrap;align-items:center;}
 .owner-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px;}
 .owner-stat{background:var(--card);border:1px solid var(--b2);border-radius:11px;padding:18px;}
 .owner-stat-lbl{font-size:10px;color:var(--mu);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
@@ -3391,7 +3391,7 @@ export default function App() {
                             </div>
                             <div className="master-mgmt-info">
                               <div className="master-mgmt-name">{m.firstName} {m.lastName}</div>
-                              <div className="master-mgmt-meta">{lang==="ru"?m.role_ru:m.role_lt} · {m.email}</div>
+                              <div className="master-mgmt-meta" style={{fontSize:10}}>{lang==="ru"?m.role_ru:m.role_lt}</div>
                               <div style={{display:"flex",gap:12,marginTop:5,flexWrap:"wrap"}}>
                                 <span style={{fontSize:11,color:"var(--mu2)"}}>📅 {mBookings.length} {lang==="ru"?"записей":"rezerv."}</span>
                                 <span style={{fontSize:11,color:"var(--gr)"}}>💰 {mRev}€</span>
@@ -3399,9 +3399,8 @@ export default function App() {
                               </div>
                             </div>
                             <div className="master-mgmt-actions">
-                              <button className="btn b-card b-sm" onClick={()=>ownerOpenEdit(m)}>{t.owner_edit_master}</button>
-                              <button className="btn b-red b-sm" onClick={()=>ownerDeleteMaster(m.id)}
-                                style={{background:confirmDeleteId===m.id?"var(--red)":"",opacity:1}}>
+                              <button onClick={()=>ownerOpenEdit(m)} style={{background:"var(--card2)",border:"1px solid var(--b2)",borderRadius:7,padding:"5px 8px",cursor:"pointer",fontSize:13,color:"var(--wh)"}}>✏️</button>
+                              <button onClick={()=>ownerDeleteMaster(m.id)} style={{background:confirmDeleteId===m.id?"var(--red)":"var(--card2)",border:confirmDeleteId===m.id?"1px solid var(--red)":"1px solid var(--b2)",borderRadius:7,padding:"5px 8px",cursor:"pointer",fontSize:confirmDeleteId===m.id?11:13,color:confirmDeleteId===m.id?"#fff":"var(--wh)",whiteSpace:"nowrap",fontWeight:confirmDeleteId===m.id?700:400}}>
                                 {confirmDeleteId===m.id?(lang==="ru"?"Удалить?":"Ištrinti?"):"🗑"}
                               </button>
                             </div>
