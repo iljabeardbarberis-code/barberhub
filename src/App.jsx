@@ -2179,17 +2179,39 @@ export default function App() {
           <section className="sec" id="svcs">
             <div className="stag">{t.services_tag}</div>
             <h2 className="stitle">{t.services_title}</h2>
-            <div className="svc-grid">
-              {SERVICES.map(s=>(
-                <div key={s.id} className="svc-card">
-                  <div className="sn">{s.name}</div>
-                  <div className="sm">
-                    <div className="sp">{s.price}€ <small>/ {s.mins} {t.min}</small></div>
-                    <button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>
-                  </div>
+            {(()=>{
+              // Собираем все уникальные услуги из всех мастеров
+              const allServices = [];
+              const seen = new Set();
+              masters.forEach(m=>{
+                (m.services||[]).filter(s=>s.enabled!==false).forEach(s=>{
+                  const key = (lang==="ru" ? s.name_ru : s.name_lt)||s.name||"";
+                  if(key && !seen.has(key)){
+                    seen.add(key);
+                    allServices.push({...s, masterColor: m.color});
+                  }
+                });
+              });
+              if(allServices.length===0) return(
+                <div style={{color:"var(--mu)",fontSize:14,padding:"20px 0"}}>
+                  {lang==="ru"?"Услуги скоро появятся":"Paslaugos netrukus atsiras"}
                 </div>
-              ))}
-            </div>
+              );
+              return(
+                <div className="svc-grid">
+                  {allServices.map((s,i)=>(
+                    <div key={i} className="svc-card">
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:s.masterColor||"var(--or)",borderRadius:"0 0 0 0"}}/>
+                      <div className="sn">{lang==="ru"?s.name_ru:s.name_lt}</div>
+                      <div className="sm">
+                        <div className="sp">{s.price}€ <small>/ {s.mins} {t.min}</small></div>
+                        <button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </section>
           <div className="divider"/>
           <section className="sec" id="msts">
