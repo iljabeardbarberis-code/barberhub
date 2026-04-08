@@ -1972,7 +1972,7 @@ export default function App() {
   };
 
   // Reschedule a booking to new date+time
-  const rescheduleBooking = (id, newDate, newTime) => {
+  const rescheduleApptByMaster = (id, newDate, newTime) => {
     setBookings(p => p.map(b => b.id===id ? {...b, date:newDate, time:newTime} : b));
     setDetailAppt(a => a?.id===id ? {...a, date:newDate, time:newTime} : a);
     setRescheduleAppt(null); setRescheduleDate(null); setRescheduleTime(null);
@@ -4198,7 +4198,7 @@ export default function App() {
                       {new Date(rescheduleDate+"T12:00").toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})} · {rescheduleTime}
                     </div>
                   </div>
-                  <button className="btn b-gr b-lg" onClick={()=>rescheduleBooking(rescheduleAppt.id,rescheduleDate,rescheduleTime)}>
+                  <button className="btn b-gr b-lg" onClick={()=>rescheduleApptByMaster(rescheduleAppt.id,rescheduleDate,rescheduleTime)}>
                     ✓ {lang==="ru"?"Подтвердить":"Patvirtinti"}
                   </button>
                 </div>
