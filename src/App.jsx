@@ -1881,10 +1881,8 @@ export default function App() {
     };
 
     try{
-      const ref = await addDoc(collection(fbDb,"bookings"), newBooking);
-      // Firestore onSnapshot will automatically update bookings state
-      // But add locally too for instant feedback
-      setBookings(p=>[...p,{...newBooking, id:ref.id}]);
+      await addDoc(collection(fbDb,"bookings"), newBooking);
+      // onSnapshot automatically updates bookings state
       await addNotification("booked",
         `${cur.name} записался · ${date} ${time} · ${svcNames}`,
         master, true
