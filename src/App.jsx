@@ -971,6 +971,34 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 `;
 
 // ── StarRow ───────────────────────────────────────────────────────────────────
+function CourseForm({ lang, onSave }) {
+  const [name, setName] = React.useState("");
+  const [price, setPrice] = React.useState("");
+  const [duration, setDuration] = React.useState("");
+  const [location, setLocation] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [saved, setSaved] = React.useState(false);
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
+        <div className="field"><label>{lang==="ru"?"Название":"Pavadinimas"}</label><input value={name} onChange={e=>setName(e.target.value)} placeholder={lang==="ru"?"Курс по стрижке":"Kirpimo kursas"}/></div>
+        <div className="field"><label>{lang==="ru"?"Цена":"Kaina"}</label><input value={price} onChange={e=>setPrice(e.target.value)} placeholder="150€"/></div>
+        <div className="field"><label>{lang==="ru"?"Длительность":"Trukmė"}</label><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={lang==="ru"?"2 дня":"2 dienos"}/></div>
+        <div className="field"><label>{lang==="ru"?"Место":"Vieta"}</label><input value={location} onChange={e=>setLocation(e.target.value)} placeholder="BARBER HUB, Klaipėda"/></div>
+      </div>
+      <div className="field"><label>{lang==="ru"?"Описание":"Aprašymas"}</label>
+        <textarea value={description} onChange={e=>setDescription(e.target.value)} rows={2} placeholder={lang==="ru"?"Что входит в курс...":"Kas įeina į kursą..."} style={{resize:"vertical"}}/></div>
+      {saved&&<div style={{color:"var(--gr)",fontSize:12,marginBottom:6}}>✓ {lang==="ru"?"Добавлено!":"Pridėta!"}</div>}
+      <button className="btn b-lg" style={{background:"var(--gold)",color:"var(--bg)",fontWeight:800}} onClick={()=>{
+        if(!name||!price) return;
+        onSave({name,price,duration,location,description});
+        setName(""); setPrice(""); setDuration(""); setLocation(""); setDescription("");
+        setSaved(true); setTimeout(()=>setSaved(false),2000);
+      }}>{lang==="ru"?"Добавить курс":"Pridėti kursą"}</button>
+    </div>
+  );
+}
+
 function StarRow({ rating, size, active }) {
   const sz = size || 14;
   const activeColor = active || "#f59e0b";
@@ -1434,6 +1462,7 @@ export default function App() {
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
   const [clientReschedule, setClientReschedule] = useState(null);
+  const [selectedMaster, setSelectedMaster] = useState(null); // for master profile page
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
@@ -1564,6 +1593,30 @@ export default function App() {
   ]);
 
   // Salon-wide schedule: work days, hours, vacation dates
+  const [salonInfo, setSalonInfo] = useState({
+    tagRu:"Клайпеда · Барбершоп с 2016",
+    tagLt:"Klaipėda · Kirpykla nuo 2016",
+    instagram:"", facebook:"", phone:"", address:"",
+    mapUrl:"",
+  });
+  const [courses, setCourses] = useState([]);
+
+  // Load salonInfo from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(fbDb,"config","salonInfo"), snap=>{
+      if(snap.exists()) setSalonInfo(p=>({...p,...snap.data()}));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
+
+  // Load courses from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"courses"), snap=>{
+      setCourses(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
+
   const [salonSchedule, setSalonSchedule] = useState({
     workDays:[1,2,3,4,5,6], // 0=Sun,1=Mon...
     workStart:"09:00",
@@ -2159,6 +2212,14 @@ export default function App() {
             {cur&&!masterObj&&!isOwner&&<button className={`nl${page==="my"?" on":""}`} onClick={()=>{setPage("my");setNavOpen(false);}}>{t.my_bookings}</button>}
             {masterObj&&<button className={`nl${page==="master"?" on":""}`} onClick={()=>{setPage("master");setNavOpen(false);}}>{t.master_cab}</button>}
             {isOwner&&<button className={`nl${page==="owner"?" on":""}`} style={{color:"var(--gold)"}} onClick={()=>{setPage("owner");setNavOpen(false);}}>👑 {t.owner_panel}</button>}
+            {/* Social links */}
+            <div style={{borderTop:"1px solid var(--border)",marginTop:10,paddingTop:10}}>
+              {salonInfo.phone&&<a href={`tel:${salonInfo.phone}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",color:"var(--wh)",textDecoration:"none",fontSize:14}}>📞 {salonInfo.phone}</a>}
+              {salonInfo.instagram&&<a href={`https://instagram.com/${salonInfo.instagram.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",color:"var(--wh)",textDecoration:"none",fontSize:14}}>📸 {salonInfo.instagram}</a>}
+              {salonInfo.facebook&&<a href={salonInfo.facebook.startsWith("http")?salonInfo.facebook:`https://facebook.com/${salonInfo.facebook}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",color:"var(--wh)",textDecoration:"none",fontSize:14}}>👍 Facebook</a>}
+              {salonInfo.address&&<a href={salonInfo.mapUrl||`https://maps.google.com/?q=${encodeURIComponent(salonInfo.address)}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",color:"var(--wh)",textDecoration:"none",fontSize:14}}>📍 {salonInfo.address}</a>}
+              {courses.length>0&&<button className="nl" style={{padding:"10px 0",textAlign:"left",width:"100%",fontSize:14}} onClick={()=>{setPage("courses");setNavOpen(false);}}>🎓 {lang==="ru"?"Обучение":"Mokymai"}</button>}
+            </div>
             {cur&&!masterObj&&!isOwner&&<>
               <button className="btn b-card b-full" style={{marginTop:8}} onClick={()=>{setPage("profile");setNavOpen(false);}}>
                 👤 {lang==="ru"?"Мой профиль":"Mano profilis"}
@@ -2177,7 +2238,7 @@ export default function App() {
         {page==="home"&&<>
           <section className="hero">
             <div className="hbg"/><div className="hwm">HUB</div>
-            <div className="htag">{t.hero_tag}</div>
+            <div className="htag">{lang==="ru"?salonInfo.tagRu:salonInfo.tagLt}</div>
             <h1 className="htitle"><span>BARBER</span><br/>HUB</h1>
             <div className="hline"/>
             <p className="hsub">{t.hero_sub}</p>
@@ -2261,7 +2322,7 @@ export default function App() {
                 const{avg,count}=getMasterRating(m.id);
                 const fullName=`${m.firstName} ${m.lastName}`.trim();
                 return(
-                  <div key={m.id} className="m-card" style={{borderColor:m.color+"33"}}>
+                  <div key={m.id} className="m-card" style={{borderColor:m.color+"33",cursor:"pointer"}} onClick={()=>setSelectedMaster(m)}>
                     <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:m.color,borderRadius:"14px 14px 0 0"}}/>
                     <div className="m-av" style={{background:m.color+"22",borderColor:m.color}}>
                       {m.photo?<img src={m.photo} alt={fullName} onError={e=>e.target.style.display="none"}/>:<span>{m.emoji}</span>}
@@ -2749,7 +2810,100 @@ export default function App() {
         )}
 
         {/* MY BOOKINGS */}
+
+        {/* COURSES PAGE */}
+        {page==="courses"&&(
+          <section className="sec" style={{maxWidth:600,margin:"0 auto"}}>
+            <div className="stag">🎓 {lang==="ru"?"ОБУЧЕНИЕ":"MOKYMAI"}</div>
+            <h2 className="stitle" style={{marginBottom:20}}>{lang==="ru"?"Курсы и обучение":"Kursai ir mokymai"}</h2>
+            {courses.length===0?(
+              <p style={{color:"var(--mu)",fontSize:14}}>{lang==="ru"?"Курсы скоро появятся":"Kursai netrukus atsiras"}</p>
+            ):courses.map(c=>(
+              <div key={c.id} style={{background:"var(--card)",borderRadius:14,padding:20,border:"1px solid var(--b2)",marginBottom:12}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1,marginBottom:8}}>{c.name}</div>
+                <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:c.description?10:12}}>
+                  <span style={{fontSize:13,color:"var(--or)",fontWeight:700}}>💰 {c.price}</span>
+                  {c.duration&&<span style={{fontSize:13,color:"var(--mu2)"}}>⏱ {c.duration}</span>}
+                  {c.location&&<span style={{fontSize:13,color:"var(--mu2)"}}>📍 {c.location}</span>}
+                </div>
+                {c.description&&<p style={{fontSize:13,color:"var(--mu2)",lineHeight:1.6,marginBottom:12}}>{c.description}</p>}
+                <a href={`tel:${salonInfo.phone||""}`} style={{display:"inline-block"}}>
+                  <button className="btn b-or">{lang==="ru"?"Записаться на консультацию":"Registruotis konsultacijai"}</button>
+                </a>
+              </div>
+            ))}
+          </section>
+        )}
+
         {/* CLIENT PROFILE PAGE */}
+
+        {/* MASTER PROFILE PAGE */}
+        {selectedMaster&&(
+          <div style={{position:"fixed",inset:0,background:"var(--bg)",zIndex:300,overflowY:"auto"}}>
+            <div style={{maxWidth:600,margin:"0 auto",padding:"16px"}}>
+              {/* Back button */}
+              <button onClick={()=>setSelectedMaster(null)} style={{background:"none",border:"none",color:"var(--or)",cursor:"pointer",fontSize:14,fontWeight:700,marginBottom:16,padding:"8px 0",display:"flex",alignItems:"center",gap:6}}>
+                ← {lang==="ru"?"Назад":"Atgal"}
+              </button>
+              {/* Master header */}
+              <div style={{background:"var(--card)",borderRadius:16,padding:20,marginBottom:16,border:`1px solid ${selectedMaster.color}44`}}>
+                <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:16}}>
+                  <div style={{width:72,height:72,borderRadius:"50%",background:selectedMaster.color+"22",border:`3px solid ${selectedMaster.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>
+                    {selectedMaster.photo?<img src={selectedMaster.photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:selectedMaster.emoji}
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1}}>{selectedMaster.firstName} {selectedMaster.lastName}</div>
+                    <div style={{color:selectedMaster.color,fontSize:13,fontWeight:700}}>{lang==="ru"?selectedMaster.role_ru:selectedMaster.role_lt}</div>
+                    {selectedMaster.experience&&<div style={{fontSize:11,color:"var(--mu2)",marginTop:2}}>⭐ {selectedMaster.experience} {lang==="ru"?"лет опыта":"m. patirtis"}</div>}
+                  </div>
+                </div>
+                {(selectedMaster.about_ru||selectedMaster.about_lt)&&(
+                  <p style={{fontSize:13,color:"var(--mu2)",lineHeight:1.6,marginBottom:12}}>
+                    {lang==="ru"?selectedMaster.about_ru:selectedMaster.about_lt}
+                  </p>
+                )}
+                <button className="btn b-or b-full b-lg" onClick={()=>{setBk(b=>({...b,master:selectedMaster.id}));setSelectedMaster(null);goBook();}}>
+                  {lang==="ru"?"Записаться к этому мастеру":"Registruotis pas šį meistrą"}
+                </button>
+              </div>
+              {/* Services */}
+              {(selectedMaster.services||[]).filter(s=>s.enabled!==false).length>0&&(
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,marginBottom:10,color:selectedMaster.color}}>
+                    {lang==="ru"?"УСЛУГИ":"PASLAUGOS"}
+                  </div>
+                  {(selectedMaster.services||[]).filter(s=>s.enabled!==false).map((s,i)=>(
+                    <div key={i} style={{background:"var(--card)",borderRadius:10,padding:"12px 16px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid var(--b2)"}}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:13}}>{lang==="ru"?s.name_ru:s.name_lt}</div>
+                        <div style={{fontSize:11,color:"var(--mu2)"}}>{s.mins} {lang==="ru"?"мин":"min"}</div>
+                      </div>
+                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:selectedMaster.color}}>{s.price}€</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Reviews */}
+              {reviews.filter(r=>String(r.masterId)===String(selectedMaster.id)).length>0&&(
+                <div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,marginBottom:10,color:selectedMaster.color}}>
+                    {lang==="ru"?"ОТЗЫВЫ":"ATSILIEPIMAI"}
+                  </div>
+                  {reviews.filter(r=>String(r.masterId)===String(selectedMaster.id)).slice(0,5).map((r,i)=>(
+                    <div key={i} style={{background:"var(--card)",borderRadius:10,padding:"12px 16px",marginBottom:6,border:"1px solid var(--b2)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                        <div style={{fontWeight:700,fontSize:13}}>{r.clientName}</div>
+                        <div style={{color:"var(--gold)",fontSize:12}}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</div>
+                      </div>
+                      {r.text&&<div style={{fontSize:12,color:"var(--mu2)",fontStyle:"italic"}}>"{r.text}"</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {page==="profile"&&cur&&!masterObj&&!isOwner&&(
           <section className="sec" style={{maxWidth:480,margin:"0 auto"}}>
             <div className="stag">{lang==="ru"?"МОЙ ПРОФИЛЬ":"MANO PROFILIS"}</div>
@@ -2816,6 +2970,11 @@ export default function App() {
               const isCancelled = b.status==="cancelled";
               const isDone = b.status==="done";
               const isRescheduling = clientReschedule?.id === b.id;
+              // Check if cancellation is allowed (>24h before appointment)
+              const bDateTime = new Date(b.date + "T" + b.time + ":00");
+              const hoursUntil = (bDateTime - new Date()) / 3600000;
+              const canCancel = !isCancelled && !isDone && hoursUntil > 24;
+              const tooLateToCancel = !isCancelled && !isDone && hoursUntil <= 24 && hoursUntil > 0;
               return(
                 <div key={b.id}>
                   <div className="bk-item" style={{opacity:isCancelled?0.7:1,borderLeft:isCancelled?"3px solid var(--red)":isDone?"3px solid var(--gr)":"3px solid var(--or)"}}>
@@ -2825,8 +2984,11 @@ export default function App() {
                       {isCancelled&&<div style={{fontSize:11,color:"var(--red)",marginTop:3,fontWeight:700}}>
                         ❌ {lang==="ru"?"Отменено":"Atšaukta"}{b.cancelledBy?` · ${b.cancelledBy}`:""}
                       </div>}
+                      {tooLateToCancel&&<div style={{fontSize:10,color:"var(--mu)",marginTop:2}}>
+                        🔒 {lang==="ru"?"Отмена недоступна (менее 24ч)":"Atšaukimas negalimas (mažiau 24val)"}
+                      </div>}
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+                    <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                       <span className={`badge ${isDone?"bgr":isCancelled?"b-red":"bor"}`} style={isCancelled?{background:"var(--red)",color:"#fff"}:{}}>
                         {isDone?(lang==="ru"?"Выполнено":"Atlikta"):isCancelled?(lang==="ru"?"Отменено":"Atšaukta"):t.confirmed}
                       </span>
@@ -2839,11 +3001,29 @@ export default function App() {
                           style={{
                             background:isRescheduling?"var(--card2)":"var(--or)",
                             color:isRescheduling?"var(--mu)":"var(--bg)",
-                            border:"none",borderRadius:8,padding:"6px 12px",
-                            fontSize:12,fontWeight:700,cursor:"pointer",
+                            border:"none",borderRadius:8,padding:"5px 10px",
+                            fontSize:11,fontWeight:700,cursor:"pointer",
                             whiteSpace:"nowrap"
                           }}>
-                          {isRescheduling?"✕ Закрыть":"📅 Перенести"}
+                          {isRescheduling?"✕":"📅 Перенести"}
+                        </button>
+                      )}
+                      {canCancel&&(
+                        <button onClick={async()=>{
+                          if(!window.confirm(lang==="ru"?"Отменить запись?":"Atšaukti rezervaciją?")) return;
+                          try{
+                            await updateDoc(doc(fbDb,"bookings",b.id),{
+                              status:"cancelled",
+                              cancelledBy:cur.name,
+                              cancelledAt:new Date().toISOString()
+                            });
+                            addNotification("cancelled",
+                              `${cur.name} ${lang==="ru"?"отменил":"atšaukė"} · ${b.date} ${b.time}`,
+                              b.masterId, true
+                            );
+                          }catch(e){}
+                        }} style={{background:"none",border:"1px solid var(--red)",borderRadius:8,padding:"4px 8px",fontSize:10,fontWeight:700,cursor:"pointer",color:"var(--red)",whiteSpace:"nowrap"}}>
+                          ✕ {lang==="ru"?"Отменить":"Atšaukti"}
                         </button>
                       )}
                     </div>
@@ -2959,6 +3139,10 @@ export default function App() {
                     <button className="btn b-full" style={{background:mc,color:"var(--bg)",marginTop:8,fontWeight:800}}
                       onClick={()=>{openNewAppt(null);setMasterDrawerOpen(false);}}>
                       {t.new_appt}
+                    </button>
+                    <button className="btn b-ghost b-full" style={{marginTop:6,color:"var(--red)",borderColor:"var(--red)"}}
+                      onClick={()=>{logout();setMasterDrawerOpen(false);}}>
+                      🚪 {lang==="ru"?"Выйти":"Atsijungti"}
                     </button>
                   </div>
                 </>
@@ -3314,6 +3498,8 @@ export default function App() {
                 {key:"reviews",  icon:"⭐", label:t.owner_tab_reviews,  badge:reviews.length},
                 {key:"subs",     icon:"💳", label:t.owner_tab_subs},
                 {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
+                {key:"siteinfo",  icon:"🌐", label:lang==="ru"?"Сайт":"Svetainė"},
+                {key:"courses",  icon:"🎓", label:lang==="ru"?"Обучение":"Mokymai"},
               ].map(item=>(
                 <button key={item.key}
                   style={{display:"flex",alignItems:"center",gap:12,padding:"13px 12px",borderRadius:10,cursor:"pointer",border:"none",
@@ -3376,6 +3562,8 @@ export default function App() {
                   {key:"reviews",  icon:"⭐", label:t.owner_tab_reviews,  badge:reviews.length},
                   {key:"subs",     icon:"💳", label:t.owner_tab_subs},
                   {key:"schedule",  icon:"🗓️", label:t.owner_tab_schedule},
+                  {key:"siteinfo",  icon:"🌐", label:lang==="ru"?"Сайт":"Svetainė"},
+                  {key:"courses",  icon:"🎓", label:lang==="ru"?"Обучение":"Mokymai"},
                 ].map(item=>(
                   <button key={item.key} className={`owner-link${ownerTab===item.key?" on":""}`} onClick={()=>setOwnerTab(item.key)}>
                     <span className="owner-icon">{item.icon}</span>{item.label}
@@ -3433,6 +3621,63 @@ export default function App() {
                     </div>
 
                     {/* RIGHT — form rendered outside IIFE above */}
+                  </div>
+                )}
+
+                {/* SITE INFO TAB */}
+                {ownerTab==="siteinfo"&&(
+                  <div style={{maxWidth:500}}>
+                    <div className="stag" style={{color:"var(--gold)"}}>🌐 {lang==="ru"?"Настройки сайта":"Svetainės nustatymai"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1,marginBottom:20}}>{lang==="ru"?"Сайт и соцсети":"Svetainė ir socialiniai"}</h2>
+                    {[
+                      {label:lang==="ru"?"Слоган (RU)":"Šūkis (RU)", key:"tagRu", placeholder:"Клайпеда · Барбершоп с 2016"},
+                      {label:lang==="ru"?"Слоган (LT)":"Šūkis (LT)", key:"tagLt", placeholder:"Klaipėda · Kirpykla nuo 2016"},
+                      {label:"Instagram", key:"instagram", placeholder:"@barberhub"},
+                      {label:"Facebook", key:"facebook", placeholder:"facebook.com/barberhub"},
+                      {label:lang==="ru"?"Телефон":"Telefonas", key:"phone", placeholder:"+370 600 00000"},
+                      {label:lang==="ru"?"Адрес":"Adresas", key:"address", placeholder:"Minijos 133a, Klaipėda"},
+                      {label:lang==="ru"?"Ссылка на карту":"Nuoroda į žemėlapį", key:"mapUrl", placeholder:"https://maps.google.com/..."},
+                    ].map(f=>(
+                      <div key={f.key} className="field">
+                        <label>{f.label}</label>
+                        <input value={salonInfo[f.key]||""} onChange={e=>setSalonInfo(p=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}/>
+                      </div>
+                    ))}
+                    <button className="btn b-lg" style={{background:"var(--gold)",color:"var(--bg)",fontWeight:800,marginTop:8}}
+                      onClick={async()=>{
+                        try{ await setDoc(doc(fbDb,"config","salonInfo"),salonInfo); alert(lang==="ru"?"Сохранено!":"Išsaugota!"); }catch(e){}
+                      }}>
+                      {lang==="ru"?"Сохранить":"Išsaugoti"}
+                    </button>
+                  </div>
+                )}
+
+                {/* COURSES TAB */}
+                {ownerTab==="courses"&&(
+                  <div>
+                    <div className="stag" style={{color:"var(--gold)"}}>🎓 {lang==="ru"?"Обучение":"Mokymai"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1,marginBottom:16}}>{lang==="ru"?"Курсы":"Kursai"}</h2>
+                    {/* Add course form */}
+                    <div style={{background:"var(--card)",borderRadius:12,padding:16,border:"1px solid var(--b2)",marginBottom:16}}>
+                      <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>{lang==="ru"?"+ Добавить курс":"+ Pridėti kursą"}</div>
+                      <CourseForm lang={lang} onSave={async(c)=>{
+                        try{ await addDoc(collection(fbDb,"courses"),{...c,createdAt:new Date().toISOString()}); }catch(e){}
+                      }}/>
+                    </div>
+                    {/* Courses list */}
+                    {courses.map(c=>(
+                      <div key={c.id} style={{background:"var(--card)",borderRadius:12,padding:14,border:"1px solid var(--b2)",marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:15}}>{c.name}</div>
+                            <div style={{fontSize:12,color:"var(--mu2)",marginTop:4}}>💰 {c.price}€ · ⏱ {c.duration} · 📍 {c.location}</div>
+                            {c.description&&<div style={{fontSize:11,color:"var(--mu)",marginTop:4}}>{c.description}</div>}
+                          </div>
+                          <button onClick={async()=>{ try{ await deleteDoc(doc(fbDb,"courses",c.id)); }catch(e){} }}
+                            style={{background:"none",border:"none",cursor:"pointer",color:"var(--red)",fontSize:16}}>🗑</button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
