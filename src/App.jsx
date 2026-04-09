@@ -815,6 +815,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .mcab{flex-direction:column;}
   .msb{display:none!important;}
   .master-widget-btn{display:flex!important;}
+  .master-block-btn{display:flex!important;align-items:center;justify-content:center;}
   .master-drawer-overlay{display:block!important;}
   .mcon{padding:12px;}
   .cal-hd{padding:8px 10px;gap:6px;flex-wrap:wrap;}
@@ -3185,6 +3186,24 @@ export default function App() {
                 ☰ {lang==="ru"?"Виджеты":"Valdikliai"}
               </button>
 
+              {/* Mobile block mode button */}
+              {mTab==="calendar"&&(
+                <button
+                  style={{
+                    display:"none",position:"fixed",bottom:24,right:20,zIndex:200,
+                    width:52,height:52,borderRadius:"50%",border:"none",cursor:"pointer",
+                    background:blockMode?"var(--red)":"var(--gold)",
+                    color:"var(--bg)",fontSize:22,fontWeight:900,
+                    boxShadow:"0 4px 16px rgba(0,0,0,.4)",
+                    opacity:widgetBtnVisible?1:0,transition:"all .3s",
+                    pointerEvents:widgetBtnVisible?"auto":"none",
+                  }}
+                  className="master-block-btn"
+                  onClick={()=>{setBlockMode(p=>!p);setBlockSelectedSlots([]);}}>
+                  {blockMode?"✕":"🔒"}
+                </button>
+              )}
+
               {/* MOBILE MASTER DRAWER */}
               {masterDrawerOpen&&(
                 <>
@@ -3283,6 +3302,11 @@ export default function App() {
                         <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.min(80,z+8))}>+</button>
                       </div>
                       <button className="btn b-sm" style={{background:mc,color:"var(--bg)"}} onClick={()=>openNewAppt(null)}>{t.new_appt}</button>
+                      <button className="btn b-sm"
+                        style={{background:blockMode?"var(--red)":"var(--card2)",color:blockMode?"#fff":"var(--gold)",border:`1px solid ${blockMode?"var(--red)":"var(--gold)"}`}}
+                        onClick={()=>{setBlockMode(p=>!p);setBlockSelectedSlots([]);}}>
+                        {blockMode?"✕":(lang==="ru"?"🔒":"🔒")}
+                      </button>
                     </div>
                   </div>
 
