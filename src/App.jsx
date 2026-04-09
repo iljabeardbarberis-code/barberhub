@@ -4107,6 +4107,25 @@ export default function App() {
                       }}>
                       {lang==="ru"?"Сохранить":"Išsaugoti"}
                     </button>
+
+                    {/* Sound settings */}
+                    <div style={{marginTop:24,background:"var(--card)",border:"1px solid var(--b2)",borderRadius:12,padding:16}}>
+                      <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:"var(--or)"}}>🔊 {lang==="ru"?"Звук для всех пользователей":"Garsas visiems"}</div>
+                      {[
+                        {key:"soundEnabled", val:soundEnabled, setter:setSoundEnabled, icon:"🔔", label:lang==="ru"?"Звуковые эффекты":"Garso efektai"},
+                        {key:"bgMusicEnabled", val:bgMusicEnabled, setter:setBgMusicEnabled, icon:"🎮", label:lang==="ru"?"Фоновая музыка Mario":"Mario muzika"},
+                      ].map(opt=>(
+                        <div key={opt.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                          <span style={{fontSize:13,fontWeight:600}}>{opt.icon} {opt.label}</span>
+                          <button onClick={async()=>{
+                            const v=!opt.val; opt.setter(v);
+                            await saveAppSettings({[opt.key]:v});
+                          }} style={{width:50,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",background:opt.val?"var(--gr)":"var(--border)",transition:"background .2s",flexShrink:0}}>
+                            <div style={{position:"absolute",top:3,left:opt.val?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
