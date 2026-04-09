@@ -1954,15 +1954,25 @@ export default function App() {
     setNewAppt({clientMode:"new",clientName:"",clientPhone:"",serviceIds:[],date:slot?fmtDate(slot.date):todayStr,time:slot?.time||"10:00",notes:""});
     setModal("newAppt");
   };
-  const saveAppt=()=>{
+  const saveAppt=async()=>{
     const{clientName,clientPhone,serviceIds,date,time}=newAppt;
     if(!clientName||!serviceIds.length||!date||!time) return;
-    setBookings(p=>[...p,{
-      id:Date.now(), masterId:masterObj.id,
-      clientName, clientPhone,
+    const newBooking = {
+      masterId: String(masterObj.id),
+      clientName, clientPhone: clientPhone||"",
+      clientEmail: "", clientUid: "",
       serviceIds, serviceId:serviceIds[0],
-      date, time, notes:newAppt.notes, status:"confirmed"
-    }]);
+      date, time, notes:newAppt.notes||"",
+      status:"confirmed", payment:"cash",
+      createdAt: new Date().toISOString(),
+      addedByMaster: true
+    };
+    try{
+      await addDoc(collection(fbDb,"bookings"), newBooking);
+    }catch(e){
+      // Offline fallback
+      setBookings(p=>[...p,{...newBooking,id:"local_"+Date.now()}]);
+    }
     setModal(null);
   };
   const updateStatus=async(id,status)=>{
