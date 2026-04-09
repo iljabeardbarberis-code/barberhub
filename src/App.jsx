@@ -1522,15 +1522,10 @@ export default function App() {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const carouselTouchStart = useRef(0);
   const [bk, setBk] = useState({ services:[], master:null, date:null, time:null, payment:null });
-  const bkServiceRef = useRef(null);
-  const bkDateRef = useRef(null);
-  const bkTimeRef = useRef(null);
-  const bkPayRef = useRef(null);
-
-  const scrollToRef = (ref) => {
+  const scrollToBkStep = (id) => {
     setTimeout(()=>{
-      ref?.current?.scrollIntoView({behavior:"smooth", block:"start"});
-    }, 100);
+      document.getElementById(id)?.scrollIntoView({behavior:"smooth", block:"start"});
+    }, 150);
   };
   const [bkDone, setBkDone] = useState(false);
   const [bkLoading, setBkLoading] = useState(false);
@@ -2613,9 +2608,15 @@ export default function App() {
               const selIds=bk.services||[];
               const ttlMins=selIds.reduce((s,sid)=>{const sv=avail.find(x=>x.id===sid);return s+(sv?(Number(sv.mins)+Number(sv.cleanup||0)):0);},0);
               const ttlPrice=selIds.reduce((s,sid)=>{const sv=avail.find(x=>x.id===sid);return s+(sv?Number(sv.price):0);},0);
-              const toggle=(id)=>setBk(b=>({...b,services:b.services.includes(id)?b.services.filter(x=>x!==id):[...b.services,id],time:null}));
+              const toggle=(id)=>{
+                setBk(b=>{
+                  const newIds=b.services.includes(id)?b.services.filter(x=>x!==id):[...b.services,id];
+                  if(newIds.length>0) scrollToBkStep("bk-step-date");
+                  return {...b,services:newIds,time:null};
+                });
+              };
               return(<>
-                <div ref={bkServiceRef} className="stag" style={{marginBottom:8}}>{t.step1}</div>
+                <div id="bk-step-service" className="stag" style={{marginBottom:8}}>{t.step1}</div>
                 <p style={{fontSize:11,color:"var(--mu2)",marginBottom:14}}>
                   {lang==="ru"?"Выберите одну или несколько услуг — они записываются одним блоком":"Pasirinkite vieną ar kelias paslaugas — jos užregistruojamos vienu bloku"}
                 </p>
@@ -2654,11 +2655,11 @@ export default function App() {
 
             {/* STEP 3: Date */}
             {bk.master&&bk.services.length>0&&<>
-              <div ref={bkDateRef}/>
+              <div id="bk-step-date"/>
               <div className="stag" style={{marginBottom:10}}>{t.step3}</div>
               <div className="dates-row">
                 {Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return d;}).map(d=>(
-                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToRef(bkTimeRef);}}>
+                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToBkStep("bk-step-time");}}>
                     {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
                   </button>
                 ))}
@@ -2667,7 +2668,7 @@ export default function App() {
 
             {/* STEP 4: Time */}
             {bk.date&&bk.master&&bk.services.length>0&&<>
-              <div ref={bkTimeRef}/>
+              <div id="bk-step-time"/>
               <div className="stag" style={{margin:"18px 0 8px"}}>{t.step4}</div>
               {(()=>{
                 const m=masters.find(x=>String(x.id)===String(bk.master));
