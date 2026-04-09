@@ -3,6 +3,42 @@ import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, where } from "firebase/firestore";
 
+// ── Sound effects ──────────────────────────────────────────────────────────
+const playSuccessSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.setValueAtTime(900, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  }catch(e){}
+};
+
+const playFailSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  }catch(e){}
+};
+
+
 const firebaseConfig = {
   apiKey: "AIzaSyDW8eSrkC1Qsk6-NXS3eYWjrBR4RFKvPVc",
   authDomain: "barber-hub-6c69d.firebaseapp.com",
@@ -2033,6 +2069,7 @@ export default function App() {
         master, true
       );
       setBkStatus("success");
+      playSuccessSound();
       setTimeout(()=>{ setBkDone(true); setBkStatus(null); }, 1500);
 
     } catch(e){
@@ -2040,6 +2077,7 @@ export default function App() {
         setBk(b=>({...b,time:null}));
       }
       setBkStatus("fail");
+      playFailSound();
       setTimeout(()=>setBkStatus(null), 2500);
     }
     setBkLoading(false);
