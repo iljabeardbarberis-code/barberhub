@@ -4612,6 +4612,48 @@ export default function App() {
                     </div>
                   </div>
                 )}
+                {/* APP SETTINGS TAB */}
+                {ownerTab==="appsettings"&&(
+                  <div>
+                    <div className="stag" style={{color:"var(--gold)"}}>⚙️ {lang==="ru"?"Настройки приложения":"Programos nustatymai"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1,marginBottom:20}}>{lang==="ru"?"НАСТРОЙКИ":"NUSTATYMAI"}</h2>
+
+                    <div style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:14,padding:20,marginBottom:14}}>
+                      <div style={{fontWeight:700,fontSize:14,marginBottom:16,color:"var(--or)"}}>🔊 {lang==="ru"?"Звук для всех пользователей":"Garsas visiems naudotojams"}</div>
+
+                      {[
+                        {key:"soundEnabled", label:lang==="ru"?"Звуковые эффекты (клики, уведомления)":"Garso efektai (paspaudimai)", icon:"🔔"},
+                        {key:"bgMusicEnabled", label:lang==="ru"?"Фоновая музыка Mario 🎮":"Foninis Mario muzika 🎮", icon:"🎮"},
+                      ].map(opt=>{
+                        const val = opt.key==="soundEnabled"?soundEnabled:bgMusicEnabled;
+                        return(
+                          <div key={opt.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid var(--border)"}}>
+                            <div>
+                              <div style={{fontSize:13,fontWeight:600}}>{opt.icon} {opt.label}</div>
+                              <div style={{fontSize:11,color:"var(--mu)",marginTop:2}}>{val?(lang==="ru"?"Включено":"Įjungta"):(lang==="ru"?"Выключено":"Išjungta")}</div>
+                            </div>
+                            <button onClick={async()=>{
+                              const newVal = !val;
+                              if(opt.key==="soundEnabled") setSoundEnabled(newVal);
+                              else setBgMusicEnabled(newVal);
+                              await saveAppSettings({[opt.key]:newVal});
+                            }} style={{
+                              width:52,height:28,borderRadius:14,border:"none",cursor:"pointer",position:"relative",
+                              background:val?"var(--gr)":"var(--border)",transition:"background .2s",flexShrink:0
+                            }}>
+                              <div style={{position:"absolute",top:4,left:val?28:4,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{fontSize:12,color:"var(--mu)",padding:"10px 14px",background:"var(--card2)",borderRadius:10,border:"1px solid var(--border)"}}>
+                      ℹ️ {lang==="ru"?"Настройки применяются ко всем пользователям сайта через Firestore.":"Nustatymai taikomi visiems svetainės naudotojams per Firestore."}
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
           );
