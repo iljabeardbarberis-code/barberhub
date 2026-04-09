@@ -1551,9 +1551,8 @@ export default function App() {
   const [newAppt, setNewAppt] = useState({ clientMode:"new", clientName:"", clientPhone:"", serviceIds:[], date:todayStr, time:"10:00", notes:"" });
   const [detailAppt, setDetailAppt] = useState(null);
   const [dragId, setDragId] = useState(null);
-  const [touchDragId, setTouchDragId] = useState(null);
-  const [touchDragGhost, setTouchDragGhost] = useState(null); // {x,y,label}
-  const touchDragRef = useRef(null);           // id of booking being dragged
+  const [touchDragGhost, setTouchDragGhost] = useState(null);
+  const touchDragRef = useRef({id:null, timer:null, active:false});
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
   const [rescheduleDate, setRescheduleDate] = useState(null);
@@ -3291,7 +3290,7 @@ export default function App() {
                                       className={`cal-cell${isOver?" drag-over":""}`}
                                       style={{height:calZoom}}
                                       data-cellkey={cellKey}
-                                      onClick={()=>!dragId&&!touchDragId&&openNewAppt({date:d,time:h})}
+                                      onClick={()=>!dragId&&!touchDragRef.current?.active&&openNewAppt({date:d,time:h})}
                                       onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
                                       onDragLeave={()=>setDragOver(null)}
                                       onDrop={()=>handleDrop(ds,h)}
@@ -3331,26 +3330,32 @@ export default function App() {
                                       style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                   onTouchStart={e=>{
                                     const touch=e.touches[0];
-                                    touchDragRef.current={id:appt.id,startX:touch.clientX,startY:touch.clientY};
-                                    const timer = setTimeout(()=>{
-                                      if(touchDragRef.current?.id===appt.id){
-                                        setTouchDragId(appt.id);
-                                        setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} ${appt.time}`});
-                                      }
-                                    },400);
-                                    touchDragRef.current.timer = timer;
+                                    const apptId=appt.id;
+                                    const apptName=appt.clientName;
+                                    const apptTime=appt.time;
+                                    clearTimeout(touchDragRef.current.timer);
+                                    touchDragRef.current={id:apptId,active:false,timer:null};
+                                    touchDragRef.current.timer=setTimeout(()=>{
+                                      touchDragRef.current.active=true;
+                                      setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${apptName} → ?`});
+                                    },500);
                                   }}
                                   onTouchMove={e=>{
-                                    if(touchDragId!==appt.id) return;
+                                    if(!touchDragRef.current.active||touchDragRef.current.id!==appt.id) return;
                                     e.preventDefault();
+                                    e.stopPropagation();
                                     const touch=e.touches[0];
-                                    setTouchDragGhost(g=>g?({...g,x:touch.clientX,y:touch.clientY}):null);
+                                    setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} → ?`});
                                     const el=document.elementFromPoint(touch.clientX,touch.clientY);
-                                    if(el?.dataset?.cellkey) setDragOver(el.dataset.cellkey);
+                                    if(el?.dataset?.cellkey){
+                                      setDragOver(el.dataset.cellkey);
+                                      const[,t]=el.dataset.cellkey.split("|");
+                                      if(t) setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} → ${t}`});
+                                    }
                                   }}
                                   onTouchEnd={e=>{
-                                    clearTimeout(touchDragRef.current?.timer);
-                                    if(touchDragId===appt.id){
+                                    clearTimeout(touchDragRef.current.timer);
+                                    if(touchDragRef.current.active&&touchDragRef.current.id===appt.id){
                                       const touch=e.changedTouches[0];
                                       const el=document.elementFromPoint(touch.clientX,touch.clientY);
                                       if(el?.dataset?.cellkey){
@@ -3358,20 +3363,15 @@ export default function App() {
                                         if(targetDate&&targetTime) handleDrop(targetDate,targetTime,appt.id);
                                       }
                                     }
-                                    // Always clear all drag state
-                                    setTouchDragId(null);
+                                    touchDragRef.current={id:null,timer:null,active:false};
                                     setTouchDragGhost(null);
                                     setDragOver(null);
-                                    setDragId(null);
-                                    touchDragRef.current=null;
                                   }}
                                   onTouchCancel={()=>{
-                                    clearTimeout(touchDragRef.current?.timer);
-                                    setTouchDragId(null);
+                                    clearTimeout(touchDragRef.current.timer);
+                                    touchDragRef.current={id:null,timer:null,active:false};
                                     setTouchDragGhost(null);
                                     setDragOver(null);
-                                    setDragId(null);
-                                    touchDragRef.current=null;
                                   }}
                                       draggable
                                       onDragStart={e=>{setDragId(appt.id);e.dataTransfer.effectAllowed="move";}}
