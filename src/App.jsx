@@ -21,6 +21,81 @@ const playSuccessSound = () => {
   }catch(e){}
 };
 
+
+const playClickSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.08);
+  }catch(e){}
+};
+
+const playNotifSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [0, 0.1].forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(i===0?700:1000, ctx.currentTime+t);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime+t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+0.15);
+      osc.start(ctx.currentTime+t); osc.stop(ctx.currentTime+t+0.15);
+    });
+  }catch(e){}
+};
+
+const playDeleteSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime+0.3);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.3);
+  }catch(e){}
+};
+
+const playDragSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(500, ctx.currentTime);
+    osc.frequency.setValueAtTime(700, ctx.currentTime+0.05);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.12);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.12);
+  }catch(e){}
+};
+
+const playBlockSound = () => {
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "square";
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.2);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.2);
+  }catch(e){}
+};
+
 const playFailSound = () => {
   try{
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -2089,6 +2164,7 @@ export default function App() {
   const saveAppt=async()=>{
     const{clientName,clientPhone,serviceIds,date,time}=newAppt;
     if(!clientName||!serviceIds.length||!date||!time) return;
+    playClickSound();
     const newBooking = {
       masterId: String(masterObj.id),
       clientName, clientPhone: clientPhone||"",
@@ -2147,6 +2223,7 @@ export default function App() {
     }
   };
   const deleteAppt=async(id)=>{
+    playDeleteSound();
     const b=bookings.find(x=>x.id===id);
     if(!b) return;
     const cancelledBy = masterObj?.firstName || (isOwner ? "Владелец" : "");
@@ -2172,6 +2249,7 @@ export default function App() {
 
   // Reschedule a booking to new date+time
   const rescheduleApptByMaster = async (id, newDate, newTime) => {
+    playSuccessSound();
     setBookings(p => p.map(b => b.id===id ? {...b, date:newDate, time:newTime} : b));
     setDetailAppt(a => a?.id===id ? {...a, date:newDate, time:newTime} : a);
     try{ await updateDoc(doc(fbDb,"bookings",id),{date:newDate, time:newTime, rescheduledAt:new Date().toISOString()}); }catch(e){}
@@ -2192,6 +2270,7 @@ export default function App() {
     if (!appt) return;
     const ids = Array.isArray(appt.serviceIds)?appt.serviceIds:(appt.serviceId?[appt.serviceId]:[]);
     if(getSlotStatus(appt.masterId, targetDate, targetTime, ids, activeId)==="free"){
+      playSuccessSound();
       setBookings(p => p.map(b => b.id===activeId ? {...b, date:targetDate, time:targetTime} : b));
       if(detailAppt?.id===activeId) setDetailAppt(a=>({...a, date:targetDate, time:targetTime}));
       try{
@@ -2344,7 +2423,7 @@ export default function App() {
                 {!masterObj&&!isOwner&&<button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>}
                 {(masterObj||isOwner)&&(
                   <div style={{position:"relative",zIndex:150}}>
-                    <button className="notif-bell" style={{zIndex:150,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();setShowNotifs(p=>!p);}} title={t.notif_title}>
+                    <button className="notif-bell" style={{zIndex:150,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();playNotifSound();setShowNotifs(p=>!p);}} title={t.notif_title}>
                       🔔{unreadCount>0&&<div className="notif-dot"/>}
                     </button>
                   </div>
@@ -2769,7 +2848,7 @@ export default function App() {
               <div className="stag" style={{marginBottom:10}}>{t.step3}</div>
               <div className="dates-row">
                 {Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return d;}).map(d=>(
-                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToBkStep("bk-step-time");}}>
+                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{playClickSound();setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToBkStep("bk-step-time");}}>
                     {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
                   </button>
                 ))}
@@ -4686,6 +4765,7 @@ export default function App() {
                       `${masterObj?.firstName} ${lang==="ru"?"заблокировал время":"blokavo laiką"} (${opt.label})`,
                       curMasterId, true
                     );
+                    playSuccessSound();
                     setBlockTypeModal(false);
                     setBlockMode(false);
                     setBlockSelectedSlots([]);
