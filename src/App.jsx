@@ -2076,15 +2076,21 @@ export default function App() {
   };
 
   // Drop handler: move booking to new slot
-  const handleDrop = (targetDate, targetTime, explicitId) => {
+  const handleDrop = async (targetDate, targetTime, explicitId) => {
     const activeId = explicitId || dragId;
     if (!activeId) return;
     const appt = bookings.find(b => b.id === activeId);
     if (!appt) return;
     const ids = Array.isArray(appt.serviceIds)?appt.serviceIds:(appt.serviceId?[appt.serviceId]:[]);
-    if(getSlotStatus(appt.masterId, targetDate, targetTime, ids, dragId)==="free"){
-      setBookings(p => p.map(b => b.id===dragId ? {...b, date:targetDate, time:targetTime} : b));
-      if (detailAppt?.id===dragId) setDetailAppt(a => ({...a, date:targetDate, time:targetTime}));
+    if(getSlotStatus(appt.masterId, targetDate, targetTime, ids, activeId)==="free"){
+      setBookings(p => p.map(b => b.id===activeId ? {...b, date:targetDate, time:targetTime} : b));
+      if(detailAppt?.id===activeId) setDetailAppt(a=>({...a, date:targetDate, time:targetTime}));
+      try{
+        await updateDoc(doc(fbDb,"bookings",activeId),{
+          date:targetDate, time:targetTime,
+          rescheduledAt:new Date().toISOString()
+        });
+      }catch(e){}
     }
     setDragId(null); setDragOver(null);
   };
