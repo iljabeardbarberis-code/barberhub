@@ -23,6 +23,156 @@ const playSuccessSound = () => {
 
 
 
+
+const MELODIES = [
+  {
+    id:"mario", name:"🎮 Super Mario",
+    notes:{E5:659,D5:587,C5:523,G4:392,A4:440,B4:494,F5:698,G5:784,A5:880,Bb4:466},
+    melody:[["E5",.15],["E5",.15],[null,.15],["E5",.15],[null,.15],["C5",.15],["E5",.3],["G5",.3],[null,.3],["G4",.3],[null,.3],["C5",.3],[null,.15],["G4",.3],[null,.15],["E5",.2],["G5",.2],["A5",.3],["F5",.15],["G5",.3],[null,.15],["E5",.3],[null,.15],["C5",.15],["D5",.15],["B4",.3]],
+    type:"square", vol:0.06
+  },
+  {
+    id:"jazz", name:"🎷 Cool Jazz",
+    notes:{C4:262,E4:330,G4:392,Bb4:466,D4:294,F4:349,A4:440,C5:523},
+    melody:[["C4",.2],["E4",.2],["G4",.2],["Bb4",.4],[null,.1],["A4",.2],["G4",.2],[null,.1],["F4",.2],["E4",.4],[null,.2],["D4",.2],["F4",.2],["A4",.2],["C5",.4],[null,.3]],
+    type:"triangle", vol:0.07
+  },
+  {
+    id:"blues", name:"🎸 Blues Riff",
+    notes:{A3:220,C4:262,D4:294,Eb4:311,E4:330,G4:392,A4:440},
+    melody:[["A3",.15],["A3",.15],["A3",.15],["A3",.15],["C4",.15],["D4",.15],["Eb4",.15],["E4",.3],[null,.1],["E4",.15],["E4",.15],[null,.1],["D4",.15],["C4",.15],["A3",.3],[null,.2]],
+    type:"sawtooth", vol:0.05
+  },
+  {
+    id:"lounge", name:"🥂 Lounge Vibes",
+    notes:{F4:349,A4:440,C5:523,E5:659,G4:392,B4:494,D5:587},
+    melody:[["F4",.3],["A4",.3],["C5",.3],["E5",.6],[null,.2],["D5",.3],["C5",.3],["B4",.3],["A4",.6],[null,.2],["G4",.3],["B4",.3],["D5",.3],["F4",.6],[null,.3]],
+    type:"sine", vol:0.06
+  },
+  {
+    id:"bossa", name:"🌴 Bossa Nova",
+    notes:{C4:262,E4:330,G4:392,A4:440,D4:294,F4:349,B4:494,C5:523},
+    melody:[["C4",.15],[null,.1],["E4",.15],["G4",.15],[null,.1],["A4",.3],[null,.1],["G4",.15],[null,.1],["F4",.15],["E4",.15],[null,.1],["D4",.3],[null,.1],["C4",.15],[null,.1],["B4",.15],[null,.1],["C5",.4],[null,.3]],
+    type:"triangle", vol:0.06
+  },
+  {
+    id:"funk", name:"🕺 Funky Beat",
+    notes:{A3:220,D4:294,E4:330,G4:392,A4:440,C5:523},
+    melody:[["A3",.1],[null,.05],["A3",.1],["D4",.2],[null,.1],["E4",.1],[null,.05],["G4",.1],["A4",.2],[null,.1],["G4",.1],["E4",.1],[null,.05],["D4",.2],[null,.1],["A3",.3],[null,.2]],
+    type:"square", vol:0.05
+  },
+  {
+    id:"retro", name:"👾 Retro Arcade",
+    notes:{C5:523,E5:659,G5:784,B5:988,A5:880,F5:698,D5:587},
+    melody:[["C5",.1],["E5",.1],["G5",.1],["B5",.1],[null,.05],["A5",.15],["G5",.1],[null,.05],["F5",.1],["E5",.1],["D5",.1],["C5",.2],[null,.1],["G5",.1],["A5",.1],["B5",.15],[null,.1],["C5",.2],[null,.2]],
+    type:"square", vol:0.04
+  },
+  {
+    id:"swing", name:"🎩 Swing Time",
+    notes:{C4:262,E4:330,G4:392,A4:440,B4:494,D4:294,F4:349},
+    melody:[["C4",.2],["E4",.1],["G4",.3],[null,.1],["A4",.2],["G4",.1],[null,.05],["E4",.2],["D4",.1],["F4",.3],[null,.1],["E4",.2],["D4",.1],["C4",.4],[null,.3]],
+    type:"triangle", vol:0.06
+  },
+  {
+    id:"latin", name:"💃 Latin Heat",
+    notes:{E4:330,A4:440,B4:494,C5:523,D5:587,G4:392,F4:349},
+    melody:[["E4",.15],[null,.1],["A4",.15],["B4",.15],[null,.1],["C5",.2],[null,.1],["B4",.15],["A4",.15],[null,.1],["G4",.2],[null,.1],["F4",.15],[null,.1],["E4",.3],[null,.2]],
+    type:"sine", vol:0.07
+  },
+  {
+    id:"soul", name:"🎤 Soul Groove",
+    notes:{G3:196,Bb3:233,C4:262,D4:294,F4:349,G4:392,A4:440},
+    melody:[["G3",.2],["Bb3",.2],["C4",.2],["D4",.4],[null,.1],["C4",.2],["Bb3",.2],[null,.1],["G3",.2],["F4",.2],["G4",.4],[null,.1],["A4",.2],["G4",.2],["F4",.2],["D4",.4],[null,.3]],
+    type:"triangle", vol:0.06
+  },
+  {
+    id:"ska", name:"🏄 Ska Vibes",
+    notes:{C4:262,E4:330,G4:392,A4:440,F4:349,D4:294,B4:494},
+    melody:[[null,.15],["G4",.1],[null,.1],["G4",.1],[null,.15],["E4",.1],[null,.1],["E4",.1],[null,.15],["F4",.1],[null,.1],["F4",.1],[null,.15],["D4",.1],[null,.1],["C4",.2],[null,.2]],
+    type:"square", vol:0.05
+  },
+  {
+    id:"chill", name:"🌊 Chill Wave",
+    notes:{A4:440,C5:523,E5:659,G5:784,F5:698,D5:587,B4:494},
+    melody:[["A4",.4],["C5",.4],["E5",.4],["G5",.8],[null,.2],["F5",.4],["E5",.4],["D5",.4],["C5",.8],[null,.2],["B4",.4],["D5",.4],["F5",.4],["A4",.8],[null,.4]],
+    type:"sine", vol:0.05
+  },
+  {
+    id:"gospel", name:"🙏 Gospel Cheer",
+    notes:{C4:262,E4:330,G4:392,A4:440,C5:523,B4:494,D4:294},
+    melody:[["C4",.2],["E4",.2],["G4",.2],["C5",.4],[null,.1],["B4",.2],["A4",.2],[null,.1],["G4",.2],["E4",.2],["D4",.2],["C4",.4],[null,.2],["G4",.2],["A4",.2],["C5",.6],[null,.3]],
+    type:"triangle", vol:0.07
+  },
+  {
+    id:"rnb", name:"🎵 R&B Smooth",
+    notes:{D4:294,F4:349,A4:440,C5:523,Bb4:466,G4:392,E4:330},
+    melody:[["D4",.25],[null,.1],["F4",.25],["A4",.25],[null,.1],["Bb4",.4],[null,.15],["A4",.25],[null,.1],["G4",.25],["F4",.25],[null,.1],["E4",.4],[null,.15],["D4",.5],[null,.3]],
+    type:"sine", vol:0.06
+  },
+  {
+    id:"disco", name:"🪩 Disco Fever",
+    notes:{C4:262,D4:294,E4:330,G4:392,A4:440,C5:523,B4:494},
+    melody:[["C4",.1],["D4",.1],["E4",.1],["G4",.1],["A4",.1],[null,.05],["A4",.1],[null,.05],["G4",.1],["E4",.1],[null,.05],["D4",.1],["C4",.2],[null,.1],["B4",.1],["C5",.1],["B4",.1],["A4",.2],[null,.2]],
+    type:"sawtooth", vol:0.04
+  },
+  {
+    id:"piano", name:"🎹 Piano Bar",
+    notes:{F4:349,A4:440,C5:523,E5:659,D5:587,G4:392,B4:494},
+    melody:[["F4",.3],["A4",.3],["C5",.3],["E5",.6],[null,.2],["D5",.3],["C5",.3],["B4",.3],["A4",.3],[null,.1],["G4",.3],["B4",.3],["D5",.3],["F4",.6],[null,.4]],
+    type:"triangle", vol:0.07
+  },
+  {
+    id:"trap", name:"🎧 Lo-Fi Trap",
+    notes:{C4:262,Eb4:311,G4:392,Bb4:466,Ab4:415,F4:349},
+    melody:[["C4",.2],[null,.1],["C4",.1],[null,.1],["Eb4",.2],[null,.1],["G4",.3],[null,.1],["Bb4",.2],[null,.1],["Ab4",.2],["G4",.3],[null,.2],["F4",.2],[null,.1],["Eb4",.2],[null,.1],["C4",.4],[null,.4]],
+    type:"triangle", vol:0.05
+  },
+  {
+    id:"waltz", name:"💫 Vienna Waltz",
+    notes:{C4:262,E4:330,G4:392,C5:523,A4:440,F4:349,D4:294},
+    melody:[["C4",.3],["E4",.15],["G4",.15],["C5",.3],["G4",.15],[null,.15],["A4",.3],["F4",.15],["A4",.15],[null,.3],["G4",.15],["E4",.15],["D4",.3],["F4",.15],["A4",.15],["C5",.5],[null,.3]],
+    type:"sine", vol:0.06
+  },
+  {
+    id:"reggae", name:"🏝️ Reggae Chill",
+    notes:{G4:392,A4:440,Bb4:466,C5:523,D5:587,F5:698,E5:659},
+    melody:[[null,.15],["G4",.1],[null,.1],["Bb4",.1],[null,.15],["C5",.2],[null,.1],["D5",.1],[null,.1],["C5",.15],[null,.1],["Bb4",.1],[null,.15],["G4",.3],[null,.2],["F5",.2],[null,.1],["E5",.2],[null,.1],["D5",.4],[null,.3]],
+    type:"triangle", vol:0.06
+  },
+  {
+    id:"ambient", name:"✨ Ambient Space",
+    notes:{C4:262,E4:330,G4:392,B4:494,D5:587,F5:698,A5:880},
+    melody:[["C4",.6],[null,.2],["E4",.6],[null,.2],["G4",.6],[null,.2],["B4",.8],[null,.3],["D5",.6],[null,.2],["F5",.6],[null,.2],["G4",.6],[null,.2],["A5",.8],[null,.5]],
+    type:"sine", vol:0.04
+  },
+];
+
+const startMelody = (audioRef, melodyId="mario") => {
+  const mel = MELODIES.find(m=>m.id===melodyId) || MELODIES[0];
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  audioRef.current = ctx;
+  const gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(mel.vol, ctx.currentTime);
+  gainNode.connect(ctx.destination);
+  const playLoop = () => {
+    if(!audioRef.current) return;
+    let t = ctx.currentTime + 0.05;
+    mel.melody.forEach(([note, dur]) => {
+      if(note && mel.notes[note]){
+        const osc = ctx.createOscillator();
+        osc.connect(gainNode);
+        osc.type = mel.type;
+        osc.frequency.setValueAtTime(mel.notes[note], t);
+        osc.start(t); osc.stop(t + dur * 0.88);
+      }
+      t += dur;
+    });
+    audioRef.current._timeout = setTimeout(playLoop, (t - ctx.currentTime) * 1000);
+  };
+  playLoop();
+};
+
+
 const startMarioMusic = (audioRef) => {
   const ctx = new (window.AudioContext||window.webkitAudioContext)();
   audioRef.current = ctx;
@@ -1713,7 +1863,9 @@ export default function App() {
   const [bkStatus, setBkStatus] = useState(null); // null | "checking" | "success" | "fail"
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicEnabled, setBgMusicEnabled] = useState(false);
+  const [currentMelodyId, setCurrentMelodyId] = useState("mario");
   const bgMusicRef = useRef(null);
+  const userInteractedRef = useRef(false);
 
   // Load global sound settings from Firestore — applies to ALL users
   useEffect(()=>{
@@ -1722,6 +1874,7 @@ export default function App() {
         const d = snap.data();
         if(d.soundEnabled !== undefined) setSoundEnabled(d.soundEnabled);
         if(d.bgMusicEnabled !== undefined) setBgMusicEnabled(d.bgMusicEnabled);
+        if(d.melodyId) setCurrentMelodyId(d.melodyId);
       }
     }, ()=>{});
     return ()=>unsub();
@@ -1732,12 +1885,33 @@ export default function App() {
   };
 
   useEffect(()=>{
-    if(bgMusicEnabled){
-      startMarioMusic(bgMusicRef);
-    } else {
+    if(!bgMusicEnabled){
       stopMarioMusic(bgMusicRef);
+      return;
     }
-    return ()=>stopMarioMusic(bgMusicRef);
+    // If user already interacted — start immediately
+    if(userInteractedRef.current){
+      startMelody(bgMusicRef, currentMelodyId||"mario");
+    }
+    // Otherwise wait for first user interaction
+    const startOnInteraction = () => {
+      if(!userInteractedRef.current){
+        userInteractedRef.current = true;
+        if(bgMusicEnabled) startMelody(bgMusicRef, currentMelodyId||"mario");
+      }
+      document.removeEventListener("click", startOnInteraction);
+      document.removeEventListener("touchstart", startOnInteraction);
+      document.removeEventListener("keydown", startOnInteraction);
+    };
+    document.addEventListener("click", startOnInteraction);
+    document.addEventListener("touchstart", startOnInteraction);
+    document.addEventListener("keydown", startOnInteraction);
+    return ()=>{
+      document.removeEventListener("click", startOnInteraction);
+      document.removeEventListener("touchstart", startOnInteraction);
+      document.removeEventListener("keydown", startOnInteraction);
+      stopMarioMusic(bgMusicRef);
+    };
   },[bgMusicEnabled]);
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
@@ -4125,7 +4299,7 @@ export default function App() {
                       <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:"var(--or)"}}>🔊 {lang==="ru"?"Звук для всех пользователей":"Garsas visiems"}</div>
                       {[
                         {key:"soundEnabled", val:soundEnabled, setter:setSoundEnabled, icon:"🔔", label:lang==="ru"?"Звуковые эффекты":"Garso efektai"},
-                        {key:"bgMusicEnabled", val:bgMusicEnabled, setter:setBgMusicEnabled, icon:"🎮", label:lang==="ru"?"Фоновая музыка Mario":"Mario muzika"},
+                        {key:"bgMusicEnabled", val:bgMusicEnabled, setter:setBgMusicEnabled, icon:"🎮", label:lang==="ru"?"Фоновая музыка":"Foninė muzika"},
                       ].map(opt=>(
                         <div key={opt.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
                           <span style={{fontSize:13,fontWeight:600}}>{opt.icon} {opt.label}</span>
@@ -4137,6 +4311,38 @@ export default function App() {
                           </button>
                         </div>
                       ))}
+
+                      {/* Melody selector */}
+                      {bgMusicEnabled&&(
+                        <div style={{marginTop:14}}>
+                          <div style={{fontSize:12,color:"var(--mu)",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>
+                            {lang==="ru"?"Выберите мелодию":"Pasirinkite melodiją"}
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto"}}>
+                            {MELODIES.map(m=>(
+                              <button key={m.id}
+                                onClick={async()=>{
+                                  setCurrentMelodyId(m.id);
+                                  await saveAppSettings({melodyId:m.id});
+                                  // Restart music with new melody
+                                  stopMarioMusic(bgMusicRef);
+                                  if(userInteractedRef.current) startMelody(bgMusicRef, m.id);
+                                }}
+                                style={{
+                                  display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                                  borderRadius:8,border:`1px solid ${currentMelodyId===m.id?"var(--or)":"var(--b2)"}`,
+                                  background:currentMelodyId===m.id?"var(--or)22":"var(--card2)",
+                                  cursor:"pointer",textAlign:"left",
+                                  color:currentMelodyId===m.id?"var(--or)":"var(--wh)",
+                                  fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:currentMelodyId===m.id?700:400,
+                                }}>
+                                {currentMelodyId===m.id&&<span style={{fontSize:10}}>▶</span>}
+                                {m.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
