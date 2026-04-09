@@ -630,6 +630,10 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-grid{display:grid;grid-template-columns:50px repeat(7,1fr);}
 .cal-hr{font-size:9px;color:var(--mu);padding:0 4px;text-align:right;display:flex;align-items:flex-start;padding-top:3px;border-bottom:1px solid var(--border);}
 .cal-cell{border-left:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;cursor:pointer;transition:background .15s;}
+.cal-cell.block-mode:hover{background:rgba(255,100,100,.08);}
+.cal-cell.block-selected{background:rgba(255,100,100,.15)!important;}
+.block-lock-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.5;pointer-events:none;}
+.block-bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--dark);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;align-items:center;}
 .cal-cell:hover{background:var(--ord);}
 .cal-cell.drag-over{background:rgba(31,186,122,.2)!important;border:1px dashed var(--gr);}
 .td-col{background:rgba(232,101,10,.03);}
@@ -1604,9 +1608,15 @@ export default function App() {
   const [subVisits, setSubVisits] = useState({});
 
   // Schedule blocks: { id, masterId (null=salon), date, fromTime, toTime, allDay, type, reason, createdBy }
-  const [blocks, setBlocks] = useState([
-    { id:"bl1", masterId:"1", date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"Обед", createdBy:"master" },
-  ]);
+  const [blocks, setBlocks] = useState([]);
+
+  // Load blocks from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"blocks"), snap=>{
+      setBlocks(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
 
   // Salon-wide schedule: work days, hours, vacation dates
   const [salonInfo, setSalonInfo] = useState({
@@ -1669,6 +1679,9 @@ export default function App() {
   },[]);
 
   const [blockModal, setBlockModal] = useState(false);
+  const [blockMode, setBlockMode] = useState(false); // visual block selection mode
+  const [blockSelectedSlots, setBlockSelectedSlots] = useState([]); // [{date,time}]
+  const [blockTypeModal, setBlockTypeModal] = useState(false); // show type picker
   const [blockForm, setBlockForm] = useState({ date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"" });
   const [vacForm, setVacForm] = useState({ dateFrom:todayStr, dateTo:todayStr, reason:"" });
 
@@ -3238,6 +3251,10 @@ export default function App() {
                 ))}
                 <div style={{flex:1}}/>
                 <button className="btn b-full b-sm" style={{background:mc,color:"var(--bg)",marginTop:10}} onClick={()=>openNewAppt(null)}>{t.new_appt}</button>
+                <button className="btn b-full b-sm" style={{background:blockMode?"var(--red)":"var(--card2)",color:blockMode?"#fff":"var(--gold)",border:"1px solid var(--gold)",marginTop:6}}
+                  onClick={()=>{setBlockMode(p=>!p);setBlockSelectedSlots([]);}}>
+                  {blockMode?(lang==="ru"?"✕ Отмена":"✕ Atšaukti"):"🔒 "+(lang==="ru"?"Блок времени":"Blokuoti laiką")}
+                </button>
               </div>
 
               {/* CONTENT */}
@@ -3304,15 +3321,39 @@ export default function App() {
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
                                   return(
-                                    <div key={h}
-                                      className={`cal-cell${isOver?" drag-over":""}`}
-                                      style={{height:calZoom}}
-                                      data-cellkey={cellKey}
-                                      onClick={()=>!dragId&&!touchDragRef.current?.active&&openNewAppt({date:d,time:h})}
-                                      onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
-                                      onDragLeave={()=>setDragOver(null)}
-                                      onDrop={()=>handleDrop(ds,h)}
-                                    />
+                                    {(()=>{
+                                      const isBlockSelected = blockSelectedSlots.some(s=>s.date===ds&&s.time===h);
+                                      const isSlotFree = getSlotStatus(curMasterId,ds,h,[])==="free";
+                                      return(
+                                        <div key={h}
+                                          className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}`}
+                                          style={{height:calZoom}}
+                                          data-cellkey={cellKey}
+                                          onClick={()=>{
+                                            if(blockMode){
+                                              if(!isSlotFree) return;
+                                              setBlockSelectedSlots(p=>
+                                                isBlockSelected
+                                                  ? p.filter(s=>!(s.date===ds&&s.time===h))
+                                                  : [...p,{date:ds,time:h}]
+                                              );
+                                              return;
+                                            }
+                                            if(!dragId&&!touchDragRef.current?.active) openNewAppt({date:d,time:h});
+                                          }}
+                                          onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
+                                          onDragLeave={()=>setDragOver(null)}
+                                          onDrop={()=>handleDrop(ds,h)}
+                                        >
+                                          {blockMode&&isSlotFree&&!isBlockSelected&&(
+                                            <div className="block-lock-icon">🔒</div>
+                                          )}
+                                          {isBlockSelected&&(
+                                            <div className="block-lock-icon" style={{opacity:1,fontSize:16}}>✕</div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                   );
                                 })}
                                 {/* Schedule blocks */}
@@ -4483,6 +4524,79 @@ export default function App() {
 
 
       {/* ══ POST-VISIT REVIEW POPUP — only for clients ══ */}
+      {/* Block mode bottom bar */}
+      {blockMode&&(
+        <div className="block-bottom-bar">
+          <div style={{flex:1,fontSize:13,fontWeight:700,color:"var(--gold)"}}>
+            🔒 {blockSelectedSlots.length > 0
+              ? `${blockSelectedSlots.length} ${lang==="ru"?"слот(ов) выбрано":"laiko tarpų pasirinkta"}`
+              : (lang==="ru"?"Нажмите на свободные слоты":"Spustelėkite laisvus laikus")}
+          </div>
+          {blockSelectedSlots.length>0&&(
+            <button className="btn b-red" style={{fontWeight:800}} onClick={()=>setBlockTypeModal(true)}>
+              🔒 {lang==="ru"?"Заблокировать":"Blokuoti"}
+            </button>
+          )}
+          <button className="btn b-ghost b-sm" onClick={()=>{setBlockMode(false);setBlockSelectedSlots([]);}}>✕</button>
+        </div>
+      )}
+
+      {/* Block type picker modal */}
+      {blockTypeModal&&(
+        <div className="overlay" onClick={()=>setBlockTypeModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="m-title">🔒 {lang==="ru"?"Тип блокировки":"Blokavimo tipas"}</div>
+            <div className="m-sub">{blockSelectedSlots.length} {lang==="ru"?"слот(ов)":"laiko tarpų"}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:16}}>
+              {[
+                {type:"break", icon:"☕", label:lang==="ru"?"Перерыв":"Pertrauka", color:"var(--gold)"},
+                {type:"rest",  icon:"🛌", label:lang==="ru"?"Отдых":"Poilsis", color:"var(--gr)"},
+                {type:"closed",icon:"🚫", label:lang==="ru"?"Нерабочее время":"Nedarbo laikas", color:"var(--red)"},
+              ].map(opt=>(
+                <button key={opt.type}
+                  onClick={async()=>{
+                    // Save each selected slot as a block
+                    for(const slot of blockSelectedSlots){
+                      const block = {
+                        masterId: String(curMasterId),
+                        date: slot.date,
+                        fromTime: slot.time,
+                        toTime: HOURS[Math.min(HOURS.indexOf(slot.time)+1, HOURS.length-1)],
+                        type: opt.type,
+                        reason: opt.label,
+                        allDay: false,
+                        createdAt: new Date().toISOString()
+                      };
+                      try{
+                        await addDoc(collection(fbDb,"blocks"), block);
+                      }catch(e){}
+                    }
+                    addNotification("block_added",
+                      `${masterObj?.firstName} ${lang==="ru"?"заблокировал время":"blokavo laiką"} (${opt.label})`,
+                      curMasterId, true
+                    );
+                    setBlockTypeModal(false);
+                    setBlockMode(false);
+                    setBlockSelectedSlots([]);
+                  }}
+                  style={{
+                    display:"flex",alignItems:"center",gap:14,padding:"14px 16px",
+                    borderRadius:10,border:`1px solid ${opt.color}44`,
+                    background:`${opt.color}11`,cursor:"pointer",
+                    fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:opt.color
+                  }}>
+                  <span style={{fontSize:24}}>{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button className="btn b-ghost b-full" style={{marginTop:12}} onClick={()=>setBlockTypeModal(false)}>
+              {lang==="ru"?"Отмена":"Atšaukti"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Touch drag ghost */}
       {touchDragGhost&&(
         <div style={{position:"fixed",zIndex:9999,background:"var(--or)",color:"var(--bg)",padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:800,pointerEvents:"none",left:touchDragGhost.x,top:touchDragGhost.y,transform:"translate(-50%,-120%)",whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(232,101,10,.5)"}}>
