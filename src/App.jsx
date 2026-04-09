@@ -1971,49 +1971,50 @@ export default function App() {
     }).filter(Boolean).join(" + ");
     const dur = totalDuration(master, services);
 
-    const newBooking = {
-      masterId: String(master),
-      clientName: cur.name||"",
-      clientPhone: cur.phone||"",
-      clientEmail: cur.email||"",
-      clientUid: cur.uid||"",
-      serviceIds: services,
-      serviceId: services[0],
-      date, time,
-      notes: "",
-      status: "confirmed",
-      payment,
-      createdAt: new Date().toISOString()
-    };
-
     try{
-      // Firestore transaction — атомарная проверка + запись
-      await runTransaction(fbDb, async(transaction)=>{
-        // Читаем все записи к этому мастеру на эту дату
-        const q = query(
-          collection(fbDb,"bookings"),
-          where("masterId","==",String(master)),
-          where("date","==",date),
-          where("status","!=","cancelled")
-        );
-        const snap = await getDocs(q);
-        const slotStart = timeToMins(time);
-        const slotEnd = slotStart + dur;
+      // Читаем свежие данные из Firestore прямо перед записью
+      const snap = await getDocs(query(
+        collection(fbDb,"bookings"),
+        where("masterId","==",String(master)),
+        where("date","==",date)
+      ));
 
-        // Проверяем пересечения
-        for(const d of snap.docs){
-          const b = d.data();
-          const bStart = timeToMins(b.time);
-          const bIds = Array.isArray(b.serviceIds)?b.serviceIds:(b.serviceId?[b.serviceId]:[]);
-          const bDur = bIds.length ? totalDuration(String(master), bIds) : 30;
-          const bEnd = bStart + bDur;
-          if(slotStart < bEnd && slotEnd > bStart){
-            throw new Error("SLOT_TAKEN");
-          }
-        }
-        // Место свободно — создаём запись
-        const newRef = doc(collection(fbDb,"bookings"));
-        transaction.set(newRef, newBooking);
+      const slotStart = timeToMins(time);
+      const slotEnd = slotStart + dur;
+      let conflict = false;
+
+      snap.docs.forEach(d=>{
+        const b = d.data();
+        if(b.status==="cancelled") return;
+        const bStart = timeToMins(b.time);
+        const bIds = Array.isArray(b.serviceIds)?b.serviceIds:(b.serviceId?[b.serviceId]:[]);
+        const bDur = bIds.length ? totalDuration(String(master), bIds) : 30;
+        const bEnd = bStart + bDur;
+        if(slotStart < bEnd && slotEnd > bStart) conflict = true;
+      });
+
+      if(conflict){
+        setBk(b=>({...b,time:null}));
+        setBkStatus("fail");
+        setTimeout(()=>setBkStatus(null), 2500);
+        setBkLoading(false);
+        return;
+      }
+
+      // Место свободно — записываем
+      await addDoc(collection(fbDb,"bookings"),{
+        masterId: String(master),
+        clientName: cur.name||"",
+        clientPhone: cur.phone||"",
+        clientEmail: cur.email||"",
+        clientUid: cur.uid||"",
+        serviceIds: services,
+        serviceId: services[0],
+        date, time,
+        notes: "",
+        status: "confirmed",
+        payment,
+        createdAt: new Date().toISOString()
       });
 
       await addNotification("booked",
@@ -2023,11 +2024,9 @@ export default function App() {
       setBkStatus("success");
       setTimeout(()=>{ setBkDone(true); setBkStatus(null); }, 1500);
     } catch(e){
+      console.error(e);
       setBkStatus("fail");
-      if(e.message==="SLOT_TAKEN"){
-        setBk(b=>({...b,time:null}));
-      }
-      setTimeout(()=>{ setBkStatus(null); }, 2500);
+      setTimeout(()=>setBkStatus(null), 2500);
     }
     setBkLoading(false);
   };
