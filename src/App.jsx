@@ -3320,40 +3320,36 @@ export default function App() {
                                 {HOURS.map(h=>{
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
+                                  const isBlockSelected = blockSelectedSlots.some(s=>s.date===ds&&s.time===h);
+                                  const isSlotFree = getSlotStatus(curMasterId,ds,h,[])==="free";
                                   return(
-                                    {(()=>{
-                                      const isBlockSelected = blockSelectedSlots.some(s=>s.date===ds&&s.time===h);
-                                      const isSlotFree = getSlotStatus(curMasterId,ds,h,[])==="free";
-                                      return(
-                                        <div key={h}
-                                          className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}`}
-                                          style={{height:calZoom}}
-                                          data-cellkey={cellKey}
-                                          onClick={()=>{
-                                            if(blockMode){
-                                              if(!isSlotFree) return;
-                                              setBlockSelectedSlots(p=>
-                                                isBlockSelected
-                                                  ? p.filter(s=>!(s.date===ds&&s.time===h))
-                                                  : [...p,{date:ds,time:h}]
-                                              );
-                                              return;
-                                            }
-                                            if(!dragId&&!touchDragRef.current?.active) openNewAppt({date:d,time:h});
-                                          }}
-                                          onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
-                                          onDragLeave={()=>setDragOver(null)}
-                                          onDrop={()=>handleDrop(ds,h)}
-                                        >
-                                          {blockMode&&isSlotFree&&!isBlockSelected&&(
-                                            <div className="block-lock-icon">🔒</div>
-                                          )}
-                                          {isBlockSelected&&(
-                                            <div className="block-lock-icon" style={{opacity:1,fontSize:16}}>✕</div>
-                                          )}
-                                        </div>
-                                      );
-                                    })()}
+                                    <div key={h}
+                                      className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}`}
+                                      style={{height:calZoom}}
+                                      data-cellkey={cellKey}
+                                      onClick={()=>{
+                                        if(blockMode){
+                                          if(!isSlotFree) return;
+                                          setBlockSelectedSlots(p=>
+                                            isBlockSelected
+                                              ? p.filter(s=>!(s.date===ds&&s.time===h))
+                                              : [...p,{date:ds,time:h}]
+                                          );
+                                          return;
+                                        }
+                                        if(!dragId&&!touchDragRef.current?.active) openNewAppt({date:d,time:h});
+                                      }}
+                                      onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
+                                      onDragLeave={()=>setDragOver(null)}
+                                      onDrop={()=>handleDrop(ds,h)}
+                                    >
+                                      {blockMode&&isSlotFree&&!isBlockSelected&&(
+                                        <div className="block-lock-icon">🔒</div>
+                                      )}
+                                      {isBlockSelected&&(
+                                        <div className="block-lock-icon" style={{opacity:1,fontSize:16}}>✕</div>
+                                      )}
+                                    </div>
                                   );
                                 })}
                                 {/* Schedule blocks */}
