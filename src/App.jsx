@@ -1727,6 +1727,10 @@ export default function App() {
     return ()=>unsub();
   },[]);
 
+  const saveAppSettings = async(settings) => {
+    try{ await setDoc(doc(fbDb,"config","appSettings"), settings, {merge:true}); }catch(e){ console.error("saveAppSettings error:",e); }
+  };
+
   useEffect(()=>{
     if(bgMusicEnabled){
       startMarioMusic(bgMusicRef);
