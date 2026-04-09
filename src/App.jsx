@@ -1711,13 +1711,21 @@ export default function App() {
   const [bkDone, setBkDone] = useState(false);
   const [bkLoading, setBkLoading] = useState(false);
   const [bkStatus, setBkStatus] = useState(null); // null | "checking" | "success" | "fail"
-  const [soundEnabled, setSoundEnabled] = useState(()=>{
-    try{ return localStorage.getItem("barberhub_sound")!=="off"; }catch(e){ return true; }
-  });
-  const [bgMusicEnabled, setBgMusicEnabled] = useState(()=>{
-    try{ return localStorage.getItem("barberhub_bgmusic")==="on"; }catch(e){ return false; }
-  });
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [bgMusicEnabled, setBgMusicEnabled] = useState(false);
   const bgMusicRef = useRef(null);
+
+  // Load global sound settings from Firestore — applies to ALL users
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(fbDb,"config","appSettings"), snap=>{
+      if(snap.exists()){
+        const d = snap.data();
+        if(d.soundEnabled !== undefined) setSoundEnabled(d.soundEnabled);
+        if(d.bgMusicEnabled !== undefined) setBgMusicEnabled(d.bgMusicEnabled);
+      }
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
 
   useEffect(()=>{
     if(bgMusicEnabled){
