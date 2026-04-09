@@ -1386,7 +1386,7 @@ export default function App() {
   // ── Load masters from Firestore ─────────────────────────────────────────
   useEffect(()=>{
     const unsub = onSnapshot(collection(fbDb,"masters"), snap=>{
-      const firestoreMasters = snap.docs.map(d=>({...d.data(), id:d.id}));
+      const firestoreMasters = snap.docs.map(d=>{ const data=d.data(); return {...data, id:data.id||d.id}; });
       if(firestoreMasters.length > 0) setMasters(firestoreMasters);
     }, ()=>{});
     return ()=>unsub();
@@ -2107,7 +2107,7 @@ export default function App() {
   };
 
   // Owner: create master
-  const ownerCreateMaster = () => {
+  const ownerCreateMaster = async () => {
     const f = ownerMasterForm;
     if(!f.firstName||!f.lastName||!f.email||!f.password) return setOwnerFormErr(t.err_fill);
     if(masters.find(m=>m.email===f.email)||f.email===OWNER.email) return setOwnerFormErr(t.owner_master_exists);
@@ -2125,16 +2125,21 @@ export default function App() {
     setMasters(p=>[...p,newMaster]);
     setOwnerMasterForm({firstName:"",lastName:"",email:"",password:"",role_ru:"",role_lt:"",color:"#e8650a",emoji:"✂️"});
     setOwnerFormOpen(false); setOwnerFormErr("");
+    // Save to Firestore using id as document key
+    try{ await setDoc(doc(fbDb,"masters",String(newMaster.id)), newMaster); }catch(e){ console.error(e); }
   };
 
   // Owner: save edited master
-  const ownerSaveMaster = () => {
+  const ownerSaveMaster = async () => {
     const f = ownerMasterForm;
     if(!f.firstName||!f.lastName||!f.email||!f.password) return setOwnerFormErr(t.err_fill);
     const conflict = masters.find(m=>m.email===f.email&&m.id!==ownerMasterEdit);
     if(conflict||f.email===OWNER.email) return setOwnerFormErr(t.owner_master_exists);
-    setMasters(p=>p.map(m=>m.id===ownerMasterEdit?{...m,...f}:m));
+    const updatedMaster = masters.find(m=>m.id===ownerMasterEdit);
+    const merged = {...updatedMaster,...f};
+    setMasters(p=>p.map(m=>m.id===ownerMasterEdit?merged:m));
     setOwnerMasterEdit(null); setOwnerFormOpen(false); setOwnerFormErr("");
+    try{ await setDoc(doc(fbDb,"masters",String(ownerMasterEdit)), merged); }catch(e){}
   };
 
   // Owner: delete master
