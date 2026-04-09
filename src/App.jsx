@@ -22,6 +22,64 @@ const playSuccessSound = () => {
 };
 
 
+
+const startMarioMusic = (audioRef) => {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  audioRef.current = ctx;
+
+  const notes = {
+    E5:659, D5:587, C5:523, G4:392, A4:440, B4:494,
+    F5:698, G5:784, A5:880, Bb4:466, Bb5:932
+  };
+
+  // Mario overworld theme (simplified)
+  const melody = [
+    ["E5",.15],["E5",.15],[null,.15],["E5",.15],[null,.15],["C5",.15],["E5",.3],
+    ["G5",.3],[null,.3],["G4",.3],[null,.3],
+    ["C5",.3],[null,.15],["G4",.3],[null,.15],["E4",.3],[null,.15],
+    ["A4",.3],[null,.15],["B4",.3],[null,.15],["Bb4",.15],["A4",.3],
+    ["G4",.2],["E5",.2],["G5",.2],["A5",.3],["F5",.15],["G5",.3],
+    [null,.15],["E5",.3],[null,.15],["C5",.15],["D5",.15],["B4",.3],
+  ];
+
+  let t = ctx.currentTime + 0.1;
+  const gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(0.06, ctx.currentTime);
+  gainNode.connect(ctx.destination);
+
+  const playMelody = (startT) => {
+    let time = startT;
+    melody.forEach(([note, dur]) => {
+      if(note && notes[note]){
+        const osc = ctx.createOscillator();
+        osc.connect(gainNode);
+        osc.type = "square";
+        osc.frequency.setValueAtTime(notes[note], time);
+        osc.start(time);
+        osc.stop(time + dur * 0.9);
+      }
+      time += dur;
+    });
+    return time;
+  };
+
+  // Loop
+  const loop = () => {
+    if(!audioRef.current) return;
+    const end = playMelody(ctx.currentTime + 0.1);
+    audioRef.current._timeout = setTimeout(loop, (end - ctx.currentTime) * 1000);
+  };
+  loop();
+};
+
+const stopMarioMusic = (audioRef) => {
+  if(audioRef.current){
+    try{ audioRef.current.close(); }catch(e){}
+    clearTimeout(audioRef.current._timeout);
+    audioRef.current = null;
+  }
+};
+
 const playClickSound = () => {
   try{
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -1653,6 +1711,22 @@ export default function App() {
   const [bkDone, setBkDone] = useState(false);
   const [bkLoading, setBkLoading] = useState(false);
   const [bkStatus, setBkStatus] = useState(null); // null | "checking" | "success" | "fail"
+  const [soundEnabled, setSoundEnabled] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_sound")!=="off"; }catch(e){ return true; }
+  });
+  const [bgMusicEnabled, setBgMusicEnabled] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_bgmusic")==="on"; }catch(e){ return false; }
+  });
+  const bgMusicRef = useRef(null);
+
+  useEffect(()=>{
+    if(bgMusicEnabled){
+      startMarioMusic(bgMusicRef);
+    } else {
+      stopMarioMusic(bgMusicRef);
+    }
+    return ()=>stopMarioMusic(bgMusicRef);
+  },[bgMusicEnabled]);
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
@@ -2144,7 +2218,7 @@ export default function App() {
         master, true
       );
       setBkStatus("success");
-      playSuccessSound();
+      soundEnabled&&playSuccessSound();
       setTimeout(()=>{ setBkDone(true); setBkStatus(null); }, 1500);
 
     } catch(e){
@@ -2152,7 +2226,7 @@ export default function App() {
         setBk(b=>({...b,time:null}));
       }
       setBkStatus("fail");
-      playFailSound();
+      soundEnabled&&playFailSound();
       setTimeout(()=>setBkStatus(null), 2500);
     }
     setBkLoading(false);
@@ -2164,7 +2238,7 @@ export default function App() {
   const saveAppt=async()=>{
     const{clientName,clientPhone,serviceIds,date,time}=newAppt;
     if(!clientName||!serviceIds.length||!date||!time) return;
-    playClickSound();
+    soundEnabled&&playClickSound();
     const newBooking = {
       masterId: String(masterObj.id),
       clientName, clientPhone: clientPhone||"",
@@ -2223,7 +2297,7 @@ export default function App() {
     }
   };
   const deleteAppt=async(id)=>{
-    playDeleteSound();
+    soundEnabled&&playDeleteSound();
     const b=bookings.find(x=>x.id===id);
     if(!b) return;
     const cancelledBy = masterObj?.firstName || (isOwner ? "Владелец" : "");
@@ -2249,7 +2323,7 @@ export default function App() {
 
   // Reschedule a booking to new date+time
   const rescheduleApptByMaster = async (id, newDate, newTime) => {
-    playSuccessSound();
+    soundEnabled&&playSuccessSound();
     setBookings(p => p.map(b => b.id===id ? {...b, date:newDate, time:newTime} : b));
     setDetailAppt(a => a?.id===id ? {...a, date:newDate, time:newTime} : a);
     try{ await updateDoc(doc(fbDb,"bookings",id),{date:newDate, time:newTime, rescheduledAt:new Date().toISOString()}); }catch(e){}
@@ -2270,7 +2344,7 @@ export default function App() {
     if (!appt) return;
     const ids = Array.isArray(appt.serviceIds)?appt.serviceIds:(appt.serviceId?[appt.serviceId]:[]);
     if(getSlotStatus(appt.masterId, targetDate, targetTime, ids, activeId)==="free"){
-      playSuccessSound();
+      soundEnabled&&playSuccessSound();
       setBookings(p => p.map(b => b.id===activeId ? {...b, date:targetDate, time:targetTime} : b));
       if(detailAppt?.id===activeId) setDetailAppt(a=>({...a, date:targetDate, time:targetTime}));
       try{
@@ -2423,7 +2497,7 @@ export default function App() {
                 {!masterObj&&!isOwner&&<button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>}
                 {(masterObj||isOwner)&&(
                   <div style={{position:"relative",zIndex:150}}>
-                    <button className="notif-bell" style={{zIndex:150,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();playNotifSound();setShowNotifs(p=>!p);}} title={t.notif_title}>
+                    <button className="notif-bell" style={{zIndex:150,position:"relative"}} onClick={e=>{e.preventDefault();e.stopPropagation();soundEnabled&&playNotifSound();setShowNotifs(p=>!p);}} title={t.notif_title}>
                       🔔{unreadCount>0&&<div className="notif-dot"/>}
                     </button>
                   </div>
@@ -2848,7 +2922,7 @@ export default function App() {
               <div className="stag" style={{marginBottom:10}}>{t.step3}</div>
               <div className="dates-row">
                 {Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return d;}).map(d=>(
-                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{playClickSound();setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToBkStep("bk-step-time");}}>
+                  <button key={fmtDate(d)} className={`dbt${bk.date===fmtDate(d)?" on":""}`} onClick={()=>{soundEnabled&&playClickSound();setBk(b=>({...b,date:fmtDate(d),time:null}));scrollToBkStep("bk-step-time");}}>
                     {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric",month:"short"})}
                   </button>
                 ))}
@@ -3202,6 +3276,35 @@ export default function App() {
             <button className="btn b-card b-full" style={{marginBottom:10}} onClick={()=>setPage("my")}>
               📋 {lang==="ru"?"Мои записи":"Mano įrašai"}
             </button>
+            {/* Sound settings */}
+            <div style={{background:"var(--card)",borderRadius:14,border:"1px solid var(--b2)",padding:16,marginBottom:12}}>
+              <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>🔊 {lang==="ru"?"Звуки":"Garsai"}</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:13}}>{lang==="ru"?"Звуковые эффекты":"Garso efektai"}</span>
+                <button onClick={()=>{
+                  const v=!soundEnabled;setSoundEnabled(v);
+                  try{localStorage.setItem("barberhub_sound",v?"on":"off");}catch(e){}
+                }} style={{
+                  width:48,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",
+                  background:soundEnabled?"var(--gr)":"var(--border)",transition:"background .2s"
+                }}>
+                  <div style={{position:"absolute",top:3,left:soundEnabled?24:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                </button>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:13}}>🎮 {lang==="ru"?"Музыка Mario":"Mario muzika"}</span>
+                <button onClick={()=>{
+                  const v=!bgMusicEnabled;setBgMusicEnabled(v);
+                  try{localStorage.setItem("barberhub_bgmusic",v?"on":"off");}catch(e){}
+                }} style={{
+                  width:48,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",
+                  background:bgMusicEnabled?"var(--or)":"var(--border)",transition:"background .2s"
+                }}>
+                  <div style={{position:"absolute",top:3,left:bgMusicEnabled?24:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                </button>
+              </div>
+            </div>
+
             {/* Logout */}
             <button className="btn b-ghost b-full" style={{color:"var(--red)",borderColor:"var(--red)"}} onClick={logout}>
               🚪 {lang==="ru"?"Выйти из аккаунта":"Atsijungti"}
@@ -4765,7 +4868,7 @@ export default function App() {
                       `${masterObj?.firstName} ${lang==="ru"?"заблокировал время":"blokavo laiką"} (${opt.label})`,
                       curMasterId, true
                     );
-                    playSuccessSound();
+                    soundEnabled&&playSuccessSound();
                     setBlockTypeModal(false);
                     setBlockMode(false);
                     setBlockSelectedSlots([]);
