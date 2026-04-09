@@ -4296,53 +4296,60 @@ export default function App() {
 
                     {/* Sound settings */}
                     <div style={{marginTop:24,background:"var(--card)",border:"1px solid var(--b2)",borderRadius:12,padding:16}}>
-                      <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:"var(--or)"}}>🔊 {lang==="ru"?"Звук для всех пользователей":"Garsas visiems"}</div>
-                      {[
-                        {key:"soundEnabled", val:soundEnabled, setter:setSoundEnabled, icon:"🔔", label:lang==="ru"?"Звуковые эффекты":"Garso efektai"},
-                        {key:"bgMusicEnabled", val:bgMusicEnabled, setter:setBgMusicEnabled, icon:"🎮", label:lang==="ru"?"Фоновая музыка":"Foninė muzika"},
-                      ].map(opt=>(
-                        <div key={opt.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
-                          <span style={{fontSize:13,fontWeight:600}}>{opt.icon} {opt.label}</span>
-                          <button onClick={async()=>{
-                            const v=!opt.val; opt.setter(v);
-                            await saveAppSettings({[opt.key]:v});
-                          }} style={{width:50,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",background:opt.val?"var(--gr)":"var(--border)",transition:"background .2s",flexShrink:0}}>
-                            <div style={{position:"absolute",top:3,left:opt.val?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
-                          </button>
-                        </div>
-                      ))}
+                      <div style={{fontWeight:700,fontSize:14,marginBottom:14,color:"var(--or)"}}>🔊 {lang==="ru"?"Звук":"Garsas"}</div>
 
-                      {/* Melody selector */}
-                      {bgMusicEnabled&&(
-                        <div style={{marginTop:14}}>
-                          <div style={{fontSize:12,color:"var(--mu)",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>
-                            {lang==="ru"?"Выберите мелодию":"Pasirinkite melodiją"}
-                          </div>
-                          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto"}}>
-                            {MELODIES.map(m=>(
-                              <button key={m.id}
-                                onClick={async()=>{
+                      {/* Sound effects toggle */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--border)",marginBottom:14}}>
+                        <span style={{fontSize:13,fontWeight:600}}>🔔 {lang==="ru"?"Звуковые эффекты":"Garso efektai"}</span>
+                        <button onClick={async()=>{
+                          const v=!soundEnabled; setSoundEnabled(v);
+                          await saveAppSettings({soundEnabled:v});
+                        }} style={{width:50,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",background:soundEnabled?"var(--gr)":"var(--border)",transition:"background .2s",flexShrink:0}}>
+                          <div style={{position:"absolute",top:3,left:soundEnabled?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                        </button>
+                      </div>
+
+                      {/* Melody list — each with its own toggle */}
+                      <div style={{fontSize:12,color:"var(--mu)",fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:1}}>
+                        🎵 {lang==="ru"?"Фоновая музыка — выберите и включите":"Foninė muzika — pasirinkite ir įjunkite"}
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:360,overflowY:"auto"}}>
+                        {MELODIES.map(m=>{
+                          const isActive = bgMusicEnabled && currentMelodyId===m.id;
+                          return(
+                            <div key={m.id} style={{
+                              display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                              borderRadius:10,border:`1px solid ${isActive?"var(--or)":"var(--b2)"}`,
+                              background:isActive?"var(--or)11":"var(--card2)",
+                            }}>
+                              <span style={{flex:1,fontSize:13,fontWeight:isActive?700:400,color:isActive?"var(--or)":"var(--wh)"}}>
+                                {isActive&&"▶ "}{m.name}
+                              </span>
+                              <button onClick={async()=>{
+                                if(isActive){
+                                  // Turn off music
+                                  setBgMusicEnabled(false);
+                                  stopMarioMusic(bgMusicRef);
+                                  await saveAppSettings({bgMusicEnabled:false});
+                                } else {
+                                  // Switch to this melody and turn on
                                   setCurrentMelodyId(m.id);
-                                  await saveAppSettings({melodyId:m.id});
-                                  // Restart music with new melody
+                                  setBgMusicEnabled(true);
                                   stopMarioMusic(bgMusicRef);
                                   if(userInteractedRef.current) startMelody(bgMusicRef, m.id);
-                                }}
-                                style={{
-                                  display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
-                                  borderRadius:8,border:`1px solid ${currentMelodyId===m.id?"var(--or)":"var(--b2)"}`,
-                                  background:currentMelodyId===m.id?"var(--or)22":"var(--card2)",
-                                  cursor:"pointer",textAlign:"left",
-                                  color:currentMelodyId===m.id?"var(--or)":"var(--wh)",
-                                  fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:currentMelodyId===m.id?700:400,
-                                }}>
-                                {currentMelodyId===m.id&&<span style={{fontSize:10}}>▶</span>}
-                                {m.name}
+                                  await saveAppSettings({bgMusicEnabled:true, melodyId:m.id});
+                                }
+                              }} style={{
+                                width:50,height:26,borderRadius:13,border:"none",cursor:"pointer",
+                                position:"relative",flexShrink:0,
+                                background:isActive?"var(--or)":"var(--border)",transition:"background .2s"
+                              }}>
+                                <div style={{position:"absolute",top:3,left:isActive?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
                               </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
