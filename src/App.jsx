@@ -633,6 +633,10 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-cell:hover{background:var(--ord);}
 .cal-cell.drag-over{background:rgba(31,186,122,.2)!important;border:1px dashed var(--gr);}
 .td-col{background:rgba(232,101,10,.03);}
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--or);z-index:10;pointer-events:none;}
+.now-dot{position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--or);}
+.now-label{position:absolute;left:-42px;top:-8px;font-size:9px;color:var(--or);font-weight:800;white-space:nowrap;}
+.touch-ghost{position:fixed;z-index:9999;background:var(--or);color:var(--bg);padding:6px 12px;borderRadius:8px;fontSize:12px;fontWeight:800;pointerEvents:none;transform:translate(-50%,-120%);white-space:nowrap;boxShadow:0 4px 16px rgba(232,101,10,.5);}
 .ab{position:absolute;left:2px;right:2px;top:2px;border-radius:5px;padding:4px 6px;cursor:grab;overflow:hidden;z-index:5;transition:transform .15s,opacity .2s;user-select:none;}
 .ab:hover{transform:scale(1.03);box-shadow:0 4px 14px rgba(0,0,0,.5);}
 .ab:active{cursor:grabbing;}
@@ -1524,6 +1528,11 @@ export default function App() {
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
   const [calZoom, setCalZoom] = useState(32);
+  const [nowTime, setNowTime] = useState(new Date());
+  useEffect(()=>{
+    const timer = setInterval(()=>setNowTime(new Date()), 60000);
+    return ()=>clearInterval(timer);
+  },[]);
   const [mTab, setMTabRaw] = useState(()=>{
     try{ return localStorage.getItem("barberhub_mTab")||"calendar"; }catch(e){ return "calendar"; }
   });
@@ -1541,7 +1550,10 @@ export default function App() {
   },[]);
   const [newAppt, setNewAppt] = useState({ clientMode:"new", clientName:"", clientPhone:"", serviceIds:[], date:todayStr, time:"10:00", notes:"" });
   const [detailAppt, setDetailAppt] = useState(null);
-  const [dragId, setDragId] = useState(null);           // id of booking being dragged
+  const [dragId, setDragId] = useState(null);
+  const [touchDragId, setTouchDragId] = useState(null);
+  const [touchDragGhost, setTouchDragGhost] = useState(null); // {x,y,label}
+  const touchDragRef = useRef(null);           // id of booking being dragged
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
   const [rescheduleDate, setRescheduleDate] = useState(null);
@@ -2064,9 +2076,10 @@ export default function App() {
   };
 
   // Drop handler: move booking to new slot
-  const handleDrop = (targetDate, targetTime) => {
-    if (!dragId) return;
-    const appt = bookings.find(b => b.id === dragId);
+  const handleDrop = (targetDate, targetTime, explicitId) => {
+    const activeId = explicitId || dragId;
+    if (!activeId) return;
+    const appt = bookings.find(b => b.id === activeId);
     if (!appt) return;
     const ids = Array.isArray(appt.serviceIds)?appt.serviceIds:(appt.serviceId?[appt.serviceId]:[]);
     if(getSlotStatus(appt.masterId, targetDate, targetTime, ids, dragId)==="free"){
@@ -3252,6 +3265,18 @@ export default function App() {
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
                               <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*calZoom}}>
+                                {/* Current time line */}
+                                {fmtDate(d)===todayStr&&(()=>{
+                                  const nowMins = nowTime.getHours()*60+nowTime.getMinutes();
+                                  const startMins = timeToMins(HOURS[0]);
+                                  const top = ((nowMins-startMins)/30)*calZoom;
+                                  if(top<0||top>HOURS.length*calZoom) return null;
+                                  return(
+                                    <div className="now-line" style={{top}}>
+                                      <div className="now-dot"/>
+                                    </div>
+                                  );
+                                })()}
                                 {HOURS.map(h=>{
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
@@ -3259,7 +3284,8 @@ export default function App() {
                                     <div key={h}
                                       className={`cal-cell${isOver?" drag-over":""}`}
                                       style={{height:calZoom}}
-                                      onClick={()=>!dragId&&openNewAppt({date:d,time:h})}
+                                      data-cellkey={cellKey}
+                                      onClick={()=>!dragId&&!touchDragId&&openNewAppt({date:d,time:h})}
                                       onDragOver={e=>{e.preventDefault();setDragOver(cellKey);}}
                                       onDragLeave={()=>setDragOver(null)}
                                       onDrop={()=>handleDrop(ds,h)}
@@ -3297,6 +3323,35 @@ export default function App() {
                                     <div key={appt.id}
                                       className={`ab${appt.status==="done"?" done":""}${isDragging?" dragging":""}`}
                                       style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
+                                  onTouchStart={e=>{
+                                    const touch=e.touches[0];
+                                    touchDragRef.current={id:appt.id,startX:touch.clientX,startY:touch.clientY};
+                                    setTimeout(()=>{
+                                      if(touchDragRef.current?.id===appt.id){
+                                        setTouchDragId(appt.id);
+                                        setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} ${appt.time}`});
+                                      }
+                                    },400);
+                                  }}
+                                  onTouchMove={e=>{
+                                    if(touchDragId!==appt.id) return;
+                                    e.preventDefault();
+                                    const touch=e.touches[0];
+                                    setTouchDragGhost(g=>({...g,x:touch.clientX,y:touch.clientY}));
+                                    // Find cell under finger
+                                    const el=document.elementFromPoint(touch.clientX,touch.clientY);
+                                    if(el?.dataset?.cellkey) setDragOver(el.dataset.cellkey);
+                                  }}
+                                  onTouchEnd={e=>{
+                                    if(touchDragId!==appt.id){ touchDragRef.current=null; return; }
+                                    const touch=e.changedTouches[0];
+                                    const el=document.elementFromPoint(touch.clientX,touch.clientY);
+                                    if(el?.dataset?.cellkey){
+                                      const[targetDate,targetTime]=el.dataset.cellkey.split("|");
+                                      if(targetDate&&targetTime) handleDrop(targetDate,targetTime,appt.id);
+                                    }
+                                    setTouchDragId(null);setTouchDragGhost(null);setDragOver(null);touchDragRef.current=null;
+                                  }}
                                       draggable
                                       onDragStart={e=>{setDragId(appt.id);e.dataTransfer.effectAllowed="move";}}
                                       onDragEnd={()=>{setDragId(null);setDragOver(null);}}
@@ -4389,6 +4444,13 @@ export default function App() {
 
 
       {/* ══ POST-VISIT REVIEW POPUP — only for clients ══ */}
+      {/* Touch drag ghost */}
+      {touchDragGhost&&(
+        <div style={{position:"fixed",zIndex:9999,background:"var(--or)",color:"var(--bg)",padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:800,pointerEvents:"none",left:touchDragGhost.x,top:touchDragGhost.y,transform:"translate(-50%,-120%)",whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(232,101,10,.5)"}}>
+          ✋ {touchDragGhost.label}
+        </div>
+      )}
+
       {visitReview&&cur?.role==="client"&&(
         <div className="visit-overlay" onClick={()=>!visitSubmitted&&setVisitReview(null)}>
           <div className="visit-modal" onClick={e=>e.stopPropagation()}>
