@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, where } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDW8eSrkC1Qsk6-NXS3eYWjrBR4RFKvPVc",
@@ -634,6 +634,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-cell.block-selected{background:rgba(255,100,100,.15)!important;}
 .block-lock-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0.5;pointer-events:none;}
 .block-bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--dark);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;align-items:center;}
+.bk-status-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;}
+.bk-status-card{background:var(--dark);border-radius:20px;padding:36px 32px;text-align:center;min-width:260px;max-width:320px;border:1px solid var(--border);}
+.bk-status-icon{font-size:52px;margin-bottom:12px;}
+.bk-status-title{font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:6px;}
+.bk-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:14px;}
+.bk-progress-bar{height:100%;background:var(--or);border-radius:2px;animation:bkprog 2s ease-in-out infinite;}
+@keyframes bkprog{0%{width:0%}60%{width:80%}100%{width:95%}}
 .cal-cell:hover{background:var(--ord);}
 .cal-cell.drag-over{background:rgba(31,186,122,.2)!important;border:1px dashed var(--gr);}
 .td-col{background:rgba(232,101,10,.03);}
@@ -1534,6 +1541,7 @@ export default function App() {
   };
   const [bkDone, setBkDone] = useState(false);
   const [bkLoading, setBkLoading] = useState(false);
+  const [bkStatus, setBkStatus] = useState(null); // null | "checking" | "success" | "fail"
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
@@ -1954,17 +1962,14 @@ export default function App() {
     if(!services.length||!master||!date||!time||!payment) return;
     if(bkLoading) return;
     setBkLoading(true);
-    if(getSlotStatus(master,date,time,services)==="busy"){
-      alert(lang==="ru"?"Это время уже занято. Выберите другое.":"Šis laikas jau užimtas.");
-      setBk(b=>({...b,time:null}));
-      setBkLoading(false);
-      return;
-    }
+    setBkStatus("checking");
+
     const selM = masters.find(m=>String(m.id)===String(master));
     const svcNames = services.map(sid=>{
       const sv=(selM?.services||[]).find(s=>s.id===sid);
       return sv?(lang==="ru"?sv.name_ru:sv.name_lt):"";
     }).filter(Boolean).join(" + ");
+    const dur = totalDuration(master, services);
 
     const newBooking = {
       masterId: String(master),
@@ -1982,15 +1987,47 @@ export default function App() {
     };
 
     try{
-      await addDoc(collection(fbDb,"bookings"), newBooking);
-      // onSnapshot automatically updates bookings state
+      // Firestore transaction — атомарная проверка + запись
+      await runTransaction(fbDb, async(transaction)=>{
+        // Читаем все записи к этому мастеру на эту дату
+        const q = query(
+          collection(fbDb,"bookings"),
+          where("masterId","==",String(master)),
+          where("date","==",date),
+          where("status","!=","cancelled")
+        );
+        const snap = await getDocs(q);
+        const slotStart = timeToMins(time);
+        const slotEnd = slotStart + dur;
+
+        // Проверяем пересечения
+        for(const d of snap.docs){
+          const b = d.data();
+          const bStart = timeToMins(b.time);
+          const bIds = Array.isArray(b.serviceIds)?b.serviceIds:(b.serviceId?[b.serviceId]:[]);
+          const bDur = bIds.length ? totalDuration(String(master), bIds) : 30;
+          const bEnd = bStart + bDur;
+          if(slotStart < bEnd && slotEnd > bStart){
+            throw new Error("SLOT_TAKEN");
+          }
+        }
+        // Место свободно — создаём запись
+        const newRef = doc(collection(fbDb,"bookings"));
+        transaction.set(newRef, newBooking);
+      });
+
       await addNotification("booked",
         `${cur.name} записался · ${date} ${time} · ${svcNames}`,
         master, true
       );
-      setBkDone(true);
+      setBkStatus("success");
+      setTimeout(()=>{ setBkDone(true); setBkStatus(null); }, 1500);
     } catch(e){
-      alert(lang==="ru"?"Ошибка при записи. Попробуйте снова.":"Klaida. Bandykite dar kartą.");
+      setBkStatus("fail");
+      if(e.message==="SLOT_TAKEN"){
+        setBk(b=>({...b,time:null}));
+      }
+      setTimeout(()=>{ setBkStatus(null); }, 2500);
     }
     setBkLoading(false);
   };
@@ -4613,6 +4650,46 @@ export default function App() {
             <button className="btn b-ghost b-full" style={{marginTop:12}} onClick={()=>setBlockTypeModal(false)}>
               {lang==="ru"?"Отмена":"Atšaukti"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Booking status overlay */}
+      {bkStatus&&(
+        <div className="bk-status-overlay">
+          <div className="bk-status-card">
+            {bkStatus==="checking"&&(
+              <>
+                <div className="bk-status-icon">⏳</div>
+                <div className="bk-status-title">{lang==="ru"?"Проверка...":"Tikrinama..."}</div>
+                <div style={{fontSize:13,color:"var(--mu)",marginBottom:4}}>
+                  {lang==="ru"?"Проверяем доступность места":"Tikriname vietos prieinamumą"}
+                </div>
+                <div className="bk-progress"><div className="bk-progress-bar"/></div>
+              </>
+            )}
+            {bkStatus==="success"&&(
+              <>
+                <div className="bk-status-icon">✅</div>
+                <div className="bk-status-title" style={{color:"var(--gr)"}}>
+                  {lang==="ru"?"Зарегистрирован!":"Užregistruota!"}
+                </div>
+                <div style={{fontSize:13,color:"var(--mu)"}}>
+                  {lang==="ru"?"Запись подтверждена":"Rezervacija patvirtinta"}
+                </div>
+              </>
+            )}
+            {bkStatus==="fail"&&(
+              <>
+                <div className="bk-status-icon">❌</div>
+                <div className="bk-status-title" style={{color:"var(--red)"}}>
+                  {lang==="ru"?"Не зарегистрирован":"Neužregistruota"}
+                </div>
+                <div style={{fontSize:13,color:"var(--mu)"}}>
+                  {lang==="ru"?"Это время уже занято. Выберите другое.":"Šis laikas jau užimtas."}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
