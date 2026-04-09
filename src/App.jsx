@@ -2036,9 +2036,10 @@ export default function App() {
   };
 
   // Reschedule a booking to new date+time
-  const rescheduleApptByMaster = (id, newDate, newTime) => {
+  const rescheduleApptByMaster = async (id, newDate, newTime) => {
     setBookings(p => p.map(b => b.id===id ? {...b, date:newDate, time:newTime} : b));
     setDetailAppt(a => a?.id===id ? {...a, date:newDate, time:newTime} : a);
+    try{ await updateDoc(doc(fbDb,"bookings",id),{date:newDate, time:newTime, rescheduledAt:new Date().toISOString()}); }catch(e){}
     setRescheduleAppt(null); setRescheduleDate(null); setRescheduleTime(null);
     setModal(null);
     const b2=bookings.find(x=>x.id===id);
@@ -4246,7 +4247,7 @@ export default function App() {
                   const sel=newAppt.serviceIds.includes(s.id);
                   return(
                     <div key={s.id}
-                      onClick={()=>setNewAppt(p=>({...p,serviceIds:sel?p.serviceIds.filter(x=>x!==s.id):[...p.serviceIds,s.id],time:"10:00"}))}
+                      onClick={()=>setNewAppt(p=>({...p,serviceIds:sel?p.serviceIds.filter(x=>x!==s.id):[...p.serviceIds,s.id]}))}
                       style={{
                         display:"flex",alignItems:"center",gap:10,
                         padding:"10px 12px",borderRadius:8,cursor:"pointer",
