@@ -3326,31 +3326,46 @@ export default function App() {
                                   onTouchStart={e=>{
                                     const touch=e.touches[0];
                                     touchDragRef.current={id:appt.id,startX:touch.clientX,startY:touch.clientY};
-                                    setTimeout(()=>{
+                                    const timer = setTimeout(()=>{
                                       if(touchDragRef.current?.id===appt.id){
                                         setTouchDragId(appt.id);
                                         setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} ${appt.time}`});
                                       }
                                     },400);
+                                    touchDragRef.current.timer = timer;
                                   }}
                                   onTouchMove={e=>{
                                     if(touchDragId!==appt.id) return;
                                     e.preventDefault();
                                     const touch=e.touches[0];
-                                    setTouchDragGhost(g=>({...g,x:touch.clientX,y:touch.clientY}));
-                                    // Find cell under finger
+                                    setTouchDragGhost(g=>g?({...g,x:touch.clientX,y:touch.clientY}):null);
                                     const el=document.elementFromPoint(touch.clientX,touch.clientY);
                                     if(el?.dataset?.cellkey) setDragOver(el.dataset.cellkey);
                                   }}
                                   onTouchEnd={e=>{
-                                    if(touchDragId!==appt.id){ touchDragRef.current=null; return; }
-                                    const touch=e.changedTouches[0];
-                                    const el=document.elementFromPoint(touch.clientX,touch.clientY);
-                                    if(el?.dataset?.cellkey){
-                                      const[targetDate,targetTime]=el.dataset.cellkey.split("|");
-                                      if(targetDate&&targetTime) handleDrop(targetDate,targetTime,appt.id);
+                                    clearTimeout(touchDragRef.current?.timer);
+                                    if(touchDragId===appt.id){
+                                      const touch=e.changedTouches[0];
+                                      const el=document.elementFromPoint(touch.clientX,touch.clientY);
+                                      if(el?.dataset?.cellkey){
+                                        const[targetDate,targetTime]=el.dataset.cellkey.split("|");
+                                        if(targetDate&&targetTime) handleDrop(targetDate,targetTime,appt.id);
+                                      }
                                     }
-                                    setTouchDragId(null);setTouchDragGhost(null);setDragOver(null);touchDragRef.current=null;
+                                    // Always clear all drag state
+                                    setTouchDragId(null);
+                                    setTouchDragGhost(null);
+                                    setDragOver(null);
+                                    setDragId(null);
+                                    touchDragRef.current=null;
+                                  }}
+                                  onTouchCancel={()=>{
+                                    clearTimeout(touchDragRef.current?.timer);
+                                    setTouchDragId(null);
+                                    setTouchDragGhost(null);
+                                    setDragOver(null);
+                                    setDragId(null);
+                                    touchDragRef.current=null;
                                   }}
                                       draggable
                                       onDragStart={e=>{setDragId(appt.id);e.dataTransfer.effectAllowed="move";}}
