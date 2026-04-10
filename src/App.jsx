@@ -945,7 +945,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tab.on{background:var(--or);color:var(--bg);}
 .cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.cal-dh{display:grid;border-bottom:2px solid var(--border);background:rgba(14,10,6,.98);position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);}
+.cal-dh{display:grid;border-bottom:2px solid var(--border);background:rgba(14,10,6,.98);}
 .cal-dhd{padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:var(--mu);border-left:1px solid var(--border);}
 .cal-dhd.td{color:var(--or);}
 .day-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;display:block;}
@@ -3776,7 +3776,21 @@ export default function App() {
                     </div>
                   </div>
 
-                  {calView==="week"&&(
+                  {calView==="week"&&(<>
+                    {/* STICKY DATE HEADER — outside scroll area */}
+                    <div className="cal-dh" style={{
+                      gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,
+                      position:"sticky",top:0,zIndex:20,
+                    }}>
+                      <div style={{borderBottom:"2px solid var(--border)",background:"rgba(14,10,6,.98)"}}/>
+                      {weekDates.map(d=>(
+                        <div key={fmtDate(d)} className={`cal-dhd${fmtDate(d)===todayStr?" td":""}`}
+                          style={{background:"rgba(14,10,6,.98)"}}>
+                          <span className="day-name">{d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short"})}</span>
+                          <span className="day-num" style={fmtDate(d)===todayStr?{color:mc}:{}}>{d.getDate()}</span>
+                        </div>
+                      ))}
+                    </div>
                     <div className="cal-body" ref={calBodyRef}
                       onTouchStart={e=>{
                         if(e.touches.length===2){
@@ -3806,15 +3820,6 @@ export default function App() {
                       onTouchEnd={()=>{ pinchRef.current.active=false; }}
                       onTouchCancel={()=>{ pinchRef.current.active=false; }}>
                       <div className="cal-week">
-                        <div className="cal-dh" style={{gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`}}>
-                          <div style={{height:50,borderBottom:"1px solid var(--border)"}}/>
-                          {weekDates.map(d=>(
-                            <div key={fmtDate(d)} className={`cal-dhd${fmtDate(d)===todayStr?" td":""}`}>
-                              <span className="day-name">{d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short"})}</span>
-                              <span className="day-num" style={fmtDate(d)===todayStr?{color:mc}:{}}>{d.getDate()}</span>
-                            </div>
-                          ))}
-                        </div>
                         <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
                           {(()=>{
@@ -4001,7 +4006,7 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  </>)}
 
                   {calView==="list"&&(
                     <div className="list-view">
