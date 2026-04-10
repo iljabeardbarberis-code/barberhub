@@ -3790,7 +3790,7 @@ export default function App() {
                   {calView==="week"&&(<>
                     {/* STICKY DATE HEADER — outside scroll area */}
                     <div className="cal-dh" style={{
-                      gridTemplateColumns:`${Math.max(44,Math.min(72,28+calZoom))}px repeat(7,1fr)`,
+                      gridTemplateColumns:`48px repeat(7,1fr)`,
                       position:"sticky",top:0,zIndex:20,
                     }}>
                       <div style={{borderBottom:"2px solid var(--border)",background:"rgba(14,10,6,.98)"}}/>
@@ -3861,38 +3861,37 @@ export default function App() {
                         swipeRef.current={active:false};
                       }}>
                       <div className="cal-week">
-                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(44,Math.min(72,28+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
+                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`48px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
                           {(()=>{
-                            const timeColW = Math.max(44, Math.min(72, 28+calZoom));
+                            const TIME_COL = 48; // fixed width always
                             return(
-                              <div style={{width:timeColW,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.08)"}}>
+                              <div style={{width:TIME_COL,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.1)"}}>
                                 {HOURS.map((h,i)=>{
                                   const isHour = h.endsWith(":00");
                                   const isHalf = h.endsWith(":30");
                                   const showLabel = calZoom>=50 ? true
                                     : calZoom>=24 ? (isHour||isHalf)
                                     : isHour;
-                                  const fontSize = isHour
-                                    ? Math.min(13,Math.max(10,calZoom/2.8))
-                                    : Math.min(11,Math.max(9,calZoom/3.5));
                                   return(
                                     <div key={h} style={{
                                       height:calZoom,
                                       display:"flex",
                                       alignItems:"center",
                                       justifyContent:"flex-end",
-                                      paddingRight:6,
-                                      fontSize,
-                                      color:isHour?"rgba(255,255,255,0.85)":isHalf?"rgba(255,255,255,0.45)":"transparent",
+                                      paddingRight:5,
+                                      fontSize:isHour?11:9,
+                                      color:isHour?"rgba(255,255,255,0.9)":isHalf?"rgba(255,255,255,0.5)":"transparent",
                                       fontWeight:isHour?800:500,
                                       fontFamily:"'Syne',sans-serif",
+                                      letterSpacing:-0.3,
                                       borderBottom:isHour
                                         ?"1px solid rgba(255,255,255,0.15)"
                                         :isHalf?"1px solid rgba(255,255,255,0.06)"
                                         :"1px solid rgba(255,255,255,0.02)",
                                       boxSizing:"border-box",
                                       whiteSpace:"nowrap",
+                                      overflow:"visible",
                                     }}>
                                       {showLabel ? h : ""}
                                     </div>
