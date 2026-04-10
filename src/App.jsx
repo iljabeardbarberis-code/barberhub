@@ -945,8 +945,8 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tab.on{background:var(--or);color:var(--bg);}
 .cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.cal-dh{display:grid;border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
-.cal-dhd{padding:8px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--mu2);border-left:1px solid var(--border);}
+.cal-dh{display:grid;border-bottom:2px solid var(--border);background:rgba(14,10,6,.98);position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);}
+.cal-dhd{padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:var(--mu);border-left:1px solid var(--border);}
 .cal-dhd.td{color:var(--or);}
 .day-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;display:block;}
 .day-name{font-size:8px;letter-spacing:1px;text-transform:uppercase;}
@@ -3819,31 +3819,32 @@ export default function App() {
                           {(()=>{
                             const timeColW = Math.max(36, Math.min(64, 20+calZoom));
                             return(
-                              <div style={{width:timeColW,flexShrink:0,background:"var(--dark)",position:"sticky",left:0,zIndex:5}}>
+                              <div style={{width:timeColW,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.08)"}}>
                                 {HOURS.map((h,i)=>{
                                   const isHour = h.endsWith(":00");
                                   const isHalf = h.endsWith(":30");
-                                  // Label visibility based on zoom
                                   const showLabel = calZoom>=50 ? true
-                                    : calZoom>=28 ? (isHour||isHalf)
+                                    : calZoom>=24 ? (isHour||isHalf)
                                     : isHour;
+                                  const fontSize = isHour
+                                    ? Math.min(13,Math.max(9,calZoom/2.8))
+                                    : Math.min(11,Math.max(8,calZoom/3.5));
                                   return(
                                     <div key={h} style={{
                                       height:calZoom,
                                       display:"flex",
-                                      alignItems:"flex-start",
+                                      alignItems:"center",
                                       justifyContent:"flex-end",
                                       paddingRight:6,
-                                      paddingTop:2,
-                                      fontSize:isHour?Math.min(11,Math.max(8,calZoom/3.5)):Math.min(9,Math.max(7,calZoom/4.5)),
-                                      color:isHour?"var(--mu)":isHalf?"rgba(255,255,255,0.35)":"transparent",
-                                      fontWeight:isHour?700:400,
+                                      fontSize,
+                                      color:isHour?"rgba(255,255,255,0.85)":isHalf?"rgba(255,255,255,0.45)":"transparent",
+                                      fontWeight:isHour?800:500,
+                                      fontFamily:"'Syne',sans-serif",
                                       borderBottom:isHour
-                                        ?"1px solid rgba(255,255,255,0.12)"
-                                        :isHalf?"1px solid rgba(255,255,255,0.05)"
+                                        ?"1px solid rgba(255,255,255,0.15)"
+                                        :isHalf?"1px solid rgba(255,255,255,0.06)"
                                         :"1px solid rgba(255,255,255,0.02)",
                                       boxSizing:"border-box",
-                                      overflow:"hidden",
                                       whiteSpace:"nowrap",
                                     }}>
                                       {showLabel ? h : ""}
