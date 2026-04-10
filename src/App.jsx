@@ -3970,25 +3970,20 @@ export default function App() {
                                         setBlockToDelete(blk.id===blockToDelete?null:blk.id);
                                       }}>
                                       {blockToDelete===blk.id ? (
-                                        <div style={{display:"flex",flexDirection:"column",gap:3,padding:2}}>
-                                          <div style={{fontSize:9,fontWeight:800,color:"#fff"}}>{lang==="ru"?"Удалить?":"Ištrinti?"}</div>
-                                          <div style={{display:"flex",gap:3}}>
-                                            <button style={{fontSize:9,padding:"2px 6px",background:"var(--red)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer",fontWeight:800}}
-                                              onClick={async(e)=>{e.stopPropagation();
-                                                setBlocks(p=>p.filter(x=>x.id!==blk.id));
-                                                try{ await deleteDoc(doc(fbDb,"blocks",blk.id)); }catch(er){}
-                                                addNotification("block_removed",`${masterObj?.firstName} удалил блок · ${blk.date}`, masterObj?.id, true);
-                                                setBlockToDelete(null);
-                                              }}>✓</button>
-                                            <button style={{fontSize:9,padding:"2px 6px",background:"rgba(255,255,255,.2)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer"}}
-                                              onClick={e=>{e.stopPropagation();setBlockToDelete(null);}}>✕</button>
-                                          </div>
+                                        <div style={{position:"absolute",inset:0,background:"rgba(200,0,0,.92)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderRadius:4,zIndex:10}}>
+                                          <button style={{fontSize:11,padding:"3px 8px",background:"#fff",border:"none",borderRadius:4,color:"var(--red)",cursor:"pointer",fontWeight:900}}
+                                            onClick={async(e)=>{e.stopPropagation();
+                                              setBlocks(p=>p.filter(x=>x.id!==blk.id));
+                                              try{ await deleteDoc(doc(fbDb,"blocks",blk.id)); }catch(er){}
+                                              setBlockToDelete(null);
+                                            }}>✓</button>
+                                          <button style={{fontSize:11,padding:"3px 8px",background:"rgba(255,255,255,.25)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer",fontWeight:900}}
+                                            onClick={e=>{e.stopPropagation();setBlockToDelete(null);}}>✕</button>
                                         </div>
-                                      ) : (
-                                        <div className="ab-block-label">
-                                          {blk.type==="break"?"☕ ":blk.type==="vacation"?"🏖️ ":"🚫 "}{blk.reason||(lang==="ru"?blk.type===("break")?"Перерыв":blk.type==="vacation"?"Отпуск":"Закрыто":blk.type)}
-                                        </div>
-                                      )}
+                                      ) : null}
+                                      <div className="ab-block-label">
+                                        {blk.type==="break"?"☕":blk.type==="vacation"?"🏖️":"🚫"} {blk.reason||(lang==="ru"?blk.type==="break"?"Перерыв":blk.type==="vacation"?"Отпуск":"Закрыто":blk.type)}
+                                      </div>
                                     </div>
                                   );
                                 })}
