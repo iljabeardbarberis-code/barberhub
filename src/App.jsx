@@ -1927,6 +1927,24 @@ export default function App() {
     const timer = setInterval(()=>setNowTime(new Date()), 60000);
     return ()=>clearInterval(timer);
   },[]);
+  // Lock body scroll when on calendar
+  useEffect(()=>{
+    if(page==="master" && mTab==="calendar"){
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return ()=>{
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  },[page, mTab]);
+
   const [mTab, setMTabRaw] = useState(()=>{
     try{ return localStorage.getItem("barberhub_mTab")||"calendar"; }catch(e){ return "calendar"; }
   });
@@ -1948,6 +1966,7 @@ export default function App() {
   const [touchDragGhost, setTouchDragGhost] = useState(null);
   const touchDragRef = useRef({id:null, timer:null, active:false});
   const pinchRef = useRef({active:false, startDist:0, startZoom:32});
+  const swipeRef = useRef({active:false});
   const calBodyRef = useRef(null);
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
@@ -3802,8 +3821,16 @@ export default function App() {
                             startDist:Math.hypot(dx,dy),
                             startZoom:calZoom
                           };
-                        } else {
+                          // Cancel swipe when pinching
+                          swipeRef.current.active=false;
+                        } else if(e.touches.length===1){
                           pinchRef.current.active=false;
+                          swipeRef.current={
+                            active:true,
+                            startX:e.touches[0].clientX,
+                            startY:e.touches[0].clientY,
+                            moved:false
+                          };
                         }
                       }}
                       onTouchMove={e=>{
@@ -3815,10 +3842,32 @@ export default function App() {
                           const ratio=dist/pinchRef.current.startDist;
                           const raw=pinchRef.current.startZoom*ratio;
                           setCalZoom(Math.round(Math.max(12,Math.min(90,raw))));
+                        } else if(e.touches.length===1&&swipeRef.current.active){
+                          const dx=e.touches[0].clientX-swipeRef.current.startX;
+                          const dy=e.touches[0].clientY-swipeRef.current.startY;
+                          // Only horizontal swipe (dx > dy means horizontal)
+                          if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30){
+                            swipeRef.current.moved=true;
+                            swipeRef.current.dx=dx;
+                          }
                         }
                       }}
-                      onTouchEnd={()=>{ pinchRef.current.active=false; }}
-                      onTouchCancel={()=>{ pinchRef.current.active=false; }}>
+                      onTouchEnd={e=>{
+                        if(swipeRef.current.active&&swipeRef.current.moved){
+                          const dx=swipeRef.current.dx||0;
+                          if(Math.abs(dx)>60){
+                            const d=new Date(weekAnchor);
+                            d.setDate(d.getDate()+(dx<0?7:-7));
+                            setWeekAnchor(d);
+                          }
+                        }
+                        pinchRef.current.active=false;
+                        swipeRef.current={active:false};
+                      }}
+                      onTouchCancel={()=>{
+                        pinchRef.current.active=false;
+                        swipeRef.current={active:false};
+                      }}>
                       <div className="cal-week">
                         <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
