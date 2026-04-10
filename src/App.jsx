@@ -910,7 +910,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .s-title{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--or);margin-bottom:8px;letter-spacing:2px;}
 .s-sub{color:var(--mu2);font-size:14px;max-width:320px;line-height:1.65;margin-bottom:24px;}
 /* MASTER CABINET */
-.mcab{display:flex;height:calc(100vh - 53px);overflow:hidden;}
+.mcab{display:flex;height:calc(100vh - 53px);overflow:hidden;overscroll-behavior:none;}
 .msb{width:200px;flex-shrink:0;background:var(--dark);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:3px;height:100%;overflow-y:auto;}
 .msp{text-align:center;padding:16px 0 18px;border-bottom:1px solid var(--border);margin-bottom:12px;}
 .msp-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 9px;overflow:hidden;border:3px solid;}
@@ -921,7 +921,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .ms-link:hover,.ms-link.on{color:var(--or);background:var(--ord);}
 .ms-icon{font-size:14px;width:18px;text-align:center;}
 .ms-badge{margin-left:auto;background:var(--or);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
-.mcon{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;height:100%;}
+.mcon{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;height:100%;overscroll-behavior:none;}
 .master-widget-btn{display:none;position:fixed;bottom:24px;left:20px;z-index:200;
   background:var(--or);color:var(--bg);border:none;border-radius:24px;
   padding:10px 18px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;
