@@ -943,7 +943,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tabs{display:flex;border:1px solid var(--b2);border-radius:7px;overflow:hidden;}
 .cal-tab{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;transition:all .18s;}
 .cal-tab.on{background:var(--or);color:var(--bg);}
-.cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;}
+.cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .cal-dh{display:grid;border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
 .cal-dhd{padding:8px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--mu2);border-left:1px solid var(--border);}
