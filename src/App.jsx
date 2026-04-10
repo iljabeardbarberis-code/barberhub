@@ -1927,7 +1927,12 @@ export default function App() {
     const timer = setInterval(()=>setNowTime(new Date()), 60000);
     return ()=>clearInterval(timer);
   },[]);
-  // Lock body scroll when on calendar
+  const [mTab, setMTabRaw] = useState(()=>{
+    try{ return localStorage.getItem("barberhub_mTab")||"calendar"; }catch(e){ return "calendar"; }
+  });
+  const setMTab = (t) => { setMTabRaw(t); try{ localStorage.setItem("barberhub_mTab",t); }catch(e){} };
+
+  // Lock body scroll when on calendar - placed after mTab declaration
   useEffect(()=>{
     if(page==="master" && mTab==="calendar"){
       document.body.style.overflow = "hidden";
@@ -1936,11 +1941,6 @@ export default function App() {
     }
     return ()=>{ document.body.style.overflow = ""; };
   },[page, mTab]);
-
-  const [mTab, setMTabRaw] = useState(()=>{
-    try{ return localStorage.getItem("barberhub_mTab")||"calendar"; }catch(e){ return "calendar"; }
-  });
-  const setMTab = (t) => { setMTabRaw(t); try{ localStorage.setItem("barberhub_mTab",t); }catch(e){} };
   const [widgetBtnVisible, setWidgetBtnVisible] = useState(true);
   const lastScrollY = useRef(0);
   useEffect(()=>{
