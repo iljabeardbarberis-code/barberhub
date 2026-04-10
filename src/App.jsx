@@ -943,7 +943,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tabs{display:flex;border:1px solid var(--b2);border-radius:7px;overflow:hidden;}
 .cal-tab{background:none;border:none;color:var(--mu);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;transition:all .18s;}
 .cal-tab.on{background:var(--or);color:var(--bg);}
-.cal-body{flex:1;overflow:auto;}
+.cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .cal-dh{display:grid;border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
 .cal-dhd{padding:8px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--mu2);border-left:1px solid var(--border);}
@@ -1947,6 +1947,7 @@ export default function App() {
   const [touchDragGhost, setTouchDragGhost] = useState(null);
   const touchDragRef = useRef({id:null, timer:null, active:false});
   const pinchRef = useRef({active:false, startDist:0, startZoom:32});
+  const calBodyRef = useRef(null);
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
   const [rescheduleDate, setRescheduleDate] = useState(null);
@@ -3775,13 +3776,19 @@ export default function App() {
                   </div>
 
                   {calView==="week"&&(
-                    <div className="cal-body"
+                    <div className="cal-body" ref={calBodyRef}
                       onTouchStart={e=>{
                         if(e.touches.length===2){
+                          e.preventDefault();
                           const dx=e.touches[0].clientX-e.touches[1].clientX;
                           const dy=e.touches[0].clientY-e.touches[1].clientY;
-                          const dist=Math.sqrt(dx*dx+dy*dy);
-                          pinchRef.current={active:true,startDist:dist,startZoom:calZoom};
+                          pinchRef.current={
+                            active:true,
+                            startDist:Math.hypot(dx,dy),
+                            startZoom:calZoom
+                          };
+                        } else {
+                          pinchRef.current.active=false;
                         }
                       }}
                       onTouchMove={e=>{
@@ -3789,15 +3796,14 @@ export default function App() {
                           e.preventDefault();
                           const dx=e.touches[0].clientX-e.touches[1].clientX;
                           const dy=e.touches[0].clientY-e.touches[1].clientY;
-                          const dist=Math.sqrt(dx*dx+dy*dy);
-                          const scale=dist/pinchRef.current.startDist;
-                          const newZoom=Math.round(Math.max(12,Math.min(80,pinchRef.current.startZoom*scale)));
-                          setCalZoom(newZoom);
+                          const dist=Math.hypot(dx,dy);
+                          const ratio=dist/pinchRef.current.startDist;
+                          const raw=pinchRef.current.startZoom*ratio;
+                          setCalZoom(Math.round(Math.max(12,Math.min(90,raw))));
                         }
                       }}
-                      onTouchEnd={e=>{
-                        if(e.touches.length<2) pinchRef.current.active=false;
-                      }}>
+                      onTouchEnd={()=>{ pinchRef.current.active=false; }}
+                      onTouchCancel={()=>{ pinchRef.current.active=false; }}>
                       <div className="cal-week">
                         <div className="cal-dh" style={{gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`}}>
                           <div style={{height:50,borderBottom:"1px solid var(--border)"}}/>
@@ -3809,34 +3815,38 @@ export default function App() {
                           ))}
                         </div>
                         <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
+                          {/* TIME COLUMN */}
                           {(()=>{
-                            // Dynamic time column based on zoom
-                            const timeColW = Math.max(36, Math.min(64, 20 + calZoom));
-                            // Show every 30min when small, 15min when medium, 10min when large
-                            const labelInterval = calZoom<28?3:calZoom<44?1.5:1; // 30min/15min/10min
+                            const timeColW = Math.max(36, Math.min(64, 20+calZoom));
                             return(
-                              <div style={{width:timeColW,flexShrink:0}}>
+                              <div style={{width:timeColW,flexShrink:0,background:"var(--dark)",position:"sticky",left:0,zIndex:5}}>
                                 {HOURS.map((h,i)=>{
-                                  const isHalfHour = h.endsWith(":00")||h.endsWith(":30");
                                   const isHour = h.endsWith(":00");
-                                  const showLabel = calZoom>=44 ? true : calZoom>=28 ? isHalfHour : isHour;
-                                  const borderStyle = isHour
-                                    ? "1px solid rgba(255,255,255,0.12)"
-                                    : isHalfHour
-                                    ? "1px solid rgba(255,255,255,0.06)"
-                                    : "1px solid rgba(255,255,255,0.02)";
+                                  const isHalf = h.endsWith(":30");
+                                  // Label visibility based on zoom
+                                  const showLabel = calZoom>=50 ? true
+                                    : calZoom>=28 ? (isHour||isHalf)
+                                    : isHour;
                                   return(
-                                    <div key={h} className="cal-hr" style={{
+                                    <div key={h} style={{
                                       height:calZoom,
-                                      fontSize:isHour?Math.max(9,Math.min(12,calZoom/3)):Math.max(7,Math.min(10,calZoom/4)),
-                                      color:isHour?"var(--mu)":"var(--mu2)",
-                                      fontWeight:isHour?700:400,
-                                      borderBottom:borderStyle,
-                                      width:timeColW,
-                                      paddingRight:4,
+                                      display:"flex",
+                                      alignItems:"flex-start",
                                       justifyContent:"flex-end",
+                                      paddingRight:6,
+                                      paddingTop:2,
+                                      fontSize:isHour?Math.min(11,Math.max(8,calZoom/3.5)):Math.min(9,Math.max(7,calZoom/4.5)),
+                                      color:isHour?"var(--mu)":isHalf?"rgba(255,255,255,0.35)":"transparent",
+                                      fontWeight:isHour?700:400,
+                                      borderBottom:isHour
+                                        ?"1px solid rgba(255,255,255,0.12)"
+                                        :isHalf?"1px solid rgba(255,255,255,0.05)"
+                                        :"1px solid rgba(255,255,255,0.02)",
+                                      boxSizing:"border-box",
+                                      overflow:"hidden",
+                                      whiteSpace:"nowrap",
                                     }}>
-                                      {showLabel?h:""}
+                                      {showLabel ? h : ""}
                                     </div>
                                   );
                                 })}
@@ -3852,7 +3862,8 @@ export default function App() {
                                 {fmtDate(d)===todayStr&&(()=>{
                                   const nowMins = nowTime.getHours()*60+nowTime.getMinutes();
                                   const startMins = timeToMins(HOURS[0]);
-                                  const top = ((nowMins-startMins)/30)*calZoom;
+                                  const slotH = calZoom; // each slot = 10 min
+                                  const top = ((nowMins-startMins)/10)*slotH;
                                   if(top<0||top>HOURS.length*calZoom) return null;
                                   return(
                                     <div className="now-line" style={{top}}>
