@@ -377,7 +377,11 @@ const INIT_SUBS = [
     perks_lt:["Neribota","VIP prioritetas","Visos paslaugos"] },
 ];
 
-const HOURS = ["09:00", "09:10", "09:20", "09:30", "09:40", "09:50", "10:00", "10:10", "10:20", "10:30", "10:40", "10:50", "11:00", "11:10", "11:20", "11:30", "11:40", "11:50", "12:00", "12:10", "12:20", "12:30", "12:40", "12:50", "13:00", "13:10", "13:20", "13:30", "13:40", "13:50", "14:00", "14:10", "14:20", "14:30", "14:40", "14:50", "15:00", "15:10", "15:20", "15:30", "15:40", "15:50", "16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:00", "17:10", "17:20", "17:30", "17:40", "17:50", "18:00", "18:10", "18:20", "18:30", "18:40", "18:50", "19:00", "19:10", "19:20", "19:30", "19:40", "19:50", "20:00"];
+// Generate 10-min slots 09:00-20:00
+const HOURS = Array.from({length:67},(_,i)=>{
+  const m = 9*60 + i*10;
+  return `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
+});
 const THEME_COLORS = ["#e8650a","#1fba7a","#c47cf5","#3b82f6","#ef4444","#f59e0b","#ec4899","#14b8a6","#f97316","#84cc16"];
 
 const DEMO_REVIEWS = [
@@ -941,13 +945,13 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-tab.on{background:var(--or);color:var(--bg);}
 .cal-body{flex:1;overflow:auto;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.cal-dh{display:grid;grid-template-columns:50px repeat(7,1fr);border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
+.cal-dh{display:grid;border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:0;z-index:10;}
 .cal-dhd{padding:8px 4px;text-align:center;font-size:10px;font-weight:800;color:var(--mu2);border-left:1px solid var(--border);}
 .cal-dhd.td{color:var(--or);}
 .day-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;display:block;}
 .day-name{font-size:8px;letter-spacing:1px;text-transform:uppercase;}
-.cal-grid{display:grid;grid-template-columns:50px repeat(7,1fr);}
-.cal-hr{font-size:9px;color:var(--mu);padding:0 4px;text-align:right;display:flex;align-items:flex-start;padding-top:3px;border-bottom:1px solid var(--border);}
+.cal-grid{display:grid;}
+.cal-hr{color:var(--mu);padding:0 4px;text-align:right;display:flex;align-items:flex-start;padding-top:2px;border-bottom:1px solid rgba(255,255,255,0.04);overflow:hidden;}
 .cal-cell{border-left:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;cursor:pointer;transition:background .15s;}
 .cal-cell.block-mode:hover{background:rgba(255,100,100,.08);}
 .cal-cell.block-selected{background:rgba(255,100,100,.15)!important;}
@@ -1942,6 +1946,7 @@ export default function App() {
   const [dragId, setDragId] = useState(null);
   const [touchDragGhost, setTouchDragGhost] = useState(null);
   const touchDragRef = useRef({id:null, timer:null, active:false});
+  const pinchRef = useRef({active:false, startDist:0, startZoom:32});
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
   const [rescheduleDate, setRescheduleDate] = useState(null);
@@ -3770,9 +3775,31 @@ export default function App() {
                   </div>
 
                   {calView==="week"&&(
-                    <div className="cal-body">
+                    <div className="cal-body"
+                      onTouchStart={e=>{
+                        if(e.touches.length===2){
+                          const dx=e.touches[0].clientX-e.touches[1].clientX;
+                          const dy=e.touches[0].clientY-e.touches[1].clientY;
+                          const dist=Math.sqrt(dx*dx+dy*dy);
+                          pinchRef.current={active:true,startDist:dist,startZoom:calZoom};
+                        }
+                      }}
+                      onTouchMove={e=>{
+                        if(e.touches.length===2&&pinchRef.current.active){
+                          e.preventDefault();
+                          const dx=e.touches[0].clientX-e.touches[1].clientX;
+                          const dy=e.touches[0].clientY-e.touches[1].clientY;
+                          const dist=Math.sqrt(dx*dx+dy*dy);
+                          const scale=dist/pinchRef.current.startDist;
+                          const newZoom=Math.round(Math.max(12,Math.min(80,pinchRef.current.startZoom*scale)));
+                          setCalZoom(newZoom);
+                        }
+                      }}
+                      onTouchEnd={e=>{
+                        if(e.touches.length<2) pinchRef.current.active=false;
+                      }}>
                       <div className="cal-week">
-                        <div className="cal-dh">
+                        <div className="cal-dh" style={{gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`}}>
                           <div style={{height:50,borderBottom:"1px solid var(--border)"}}/>
                           {weekDates.map(d=>(
                             <div key={fmtDate(d)} className={`cal-dhd${fmtDate(d)===todayStr?" td":""}`}>
@@ -3781,8 +3808,41 @@ export default function App() {
                             </div>
                           ))}
                         </div>
-                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom}}>
-                          <div>{HOURS.map((h,i)=><div key={h} className="cal-hr" style={{height:calZoom,fontSize:i%3===0?9:0,color:i%3===0?"var(--mu)":"transparent",borderBottom:i%3===0?"1px solid var(--border)":"1px solid rgba(255,255,255,0.03)"}}>{h}</div>)}</div>
+                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
+                          {(()=>{
+                            // Dynamic time column based on zoom
+                            const timeColW = Math.max(36, Math.min(64, 20 + calZoom));
+                            // Show every 30min when small, 15min when medium, 10min when large
+                            const labelInterval = calZoom<28?3:calZoom<44?1.5:1; // 30min/15min/10min
+                            return(
+                              <div style={{width:timeColW,flexShrink:0}}>
+                                {HOURS.map((h,i)=>{
+                                  const isHalfHour = h.endsWith(":00")||h.endsWith(":30");
+                                  const isHour = h.endsWith(":00");
+                                  const showLabel = calZoom>=44 ? true : calZoom>=28 ? isHalfHour : isHour;
+                                  const borderStyle = isHour
+                                    ? "1px solid rgba(255,255,255,0.12)"
+                                    : isHalfHour
+                                    ? "1px solid rgba(255,255,255,0.06)"
+                                    : "1px solid rgba(255,255,255,0.02)";
+                                  return(
+                                    <div key={h} className="cal-hr" style={{
+                                      height:calZoom,
+                                      fontSize:isHour?Math.max(9,Math.min(12,calZoom/3)):Math.max(7,Math.min(10,calZoom/4)),
+                                      color:isHour?"var(--mu)":"var(--mu2)",
+                                      fontWeight:isHour?700:400,
+                                      borderBottom:borderStyle,
+                                      width:timeColW,
+                                      paddingRight:4,
+                                      justifyContent:"flex-end",
+                                    }}>
+                                      {showLabel?h:""}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
                           {weekDates.map(d=>{
                             const ds=fmtDate(d);
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
@@ -3807,7 +3867,7 @@ export default function App() {
                                   const isSlotFree = getSlotStatus(curMasterId,ds,h,[])==="free";
                                   return(
                                     <div key={h}
-                                      className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}`}
+                                      className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}${h.endsWith(":00")?" cal-cell-hour":h.endsWith(":30")?" cal-cell-half":""}`}
                                       style={{height:calZoom}}
                                       data-cellkey={cellKey}
                                       onClick={()=>{
