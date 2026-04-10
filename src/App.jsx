@@ -3867,7 +3867,7 @@ export default function App() {
                           {(()=>{
                             const TIME_COL = 48; // fixed width always
                             return(
-                              <div style={{width:TIME_COL,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.1)"}}>
+                              <div style={{width:TIME_COL,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
                                 {HOURS.map((h,i)=>{
                                   const isHour = h.endsWith(":00");
                                   const isHalf = h.endsWith(":30");
@@ -3906,6 +3906,8 @@ export default function App() {
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
                               <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*calZoom}}>
+                                {/* Full-height vertical separator on left of each day */}
+                                <div style={{position:"absolute",top:0,bottom:0,left:0,width:1,background:"rgba(255,255,255,0.89)",zIndex:2,pointerEvents:"none"}}/>
                                 {/* Hour/half-hour guide lines across full width */}
                                 {HOURS.map((h,hi)=>{
                                   const isHour = h.endsWith(":00");
