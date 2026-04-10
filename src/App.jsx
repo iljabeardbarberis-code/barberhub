@@ -781,8 +781,8 @@ function getWeekDates(anchor) {
 }
 function timeToMins(t) { const[h,m]=t.split(":").map(Number); return h*60+m; }
 const SLOT_H = 52; // default, overridden by state below
-function slotTop(time, sh=52) { return ((timeToMins(time)-timeToMins("09:00"))/30)*sh; }
-function slotHeight(mins, sh=52) { return Math.max((mins/30)*sh, Math.min(sh, 30)); }
+function slotTop(time, sh=52) { return ((timeToMins(time)-timeToMins("09:00"))/10)*sh; }
+function slotHeight(mins, sh=52) { return Math.max((mins/10)*sh, Math.min(sh*2, 20)); }
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -2079,7 +2079,8 @@ export default function App() {
   const [blockModal, setBlockModal] = useState(false);
   const [blockMode, setBlockMode] = useState(false); // visual block selection mode
   const [blockSelectedSlots, setBlockSelectedSlots] = useState([]); // [{date,time}]
-  const [blockTypeModal, setBlockTypeModal] = useState(false); // show type picker
+  const [blockTypeModal, setBlockTypeModal] = useState(false);
+  const [blockToDelete, setBlockToDelete] = useState(null); // show type picker
   const [blockForm, setBlockForm] = useState({ date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"" });
   const [vacForm, setVacForm] = useState({ dateFrom:todayStr, dateTo:todayStr, reason:"" });
 
@@ -3965,14 +3966,29 @@ export default function App() {
                                       title={blk.reason||blk.type}
                                       onClick={e=>{
                                         e.stopPropagation();
-                                        if(window.confirm(lang==="ru"?`Удалить блок "${blk.reason||blk.type}"?`:"Ištrinti bloką?")){
-                                          setBlocks(p=>p.filter(x=>x.id!==blk.id));
-                                          addNotification("block_removed",`${masterObj.firstName} удалил блок · ${blk.date}`, masterObj.id, true);
-                                        }
+                                        // Show confirm via state instead of window.confirm
+                                        setBlockToDelete(blk.id===blockToDelete?null:blk.id);
                                       }}>
-                                      <div className="ab-block-label">
-                                        {blk.type==="break"?"☕ ":blk.type==="vacation"?"🏖️ ":"🚫 "}{blk.reason||(lang==="ru"?blk.type===("break")?"Перерыв":blk.type==="vacation"?"Отпуск":"Закрыто":blk.type)}
-                                      </div>
+                                      {blockToDelete===blk.id ? (
+                                        <div style={{display:"flex",flexDirection:"column",gap:3,padding:2}}>
+                                          <div style={{fontSize:9,fontWeight:800,color:"#fff"}}>{lang==="ru"?"Удалить?":"Ištrinti?"}</div>
+                                          <div style={{display:"flex",gap:3}}>
+                                            <button style={{fontSize:9,padding:"2px 6px",background:"var(--red)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer",fontWeight:800}}
+                                              onClick={async(e)=>{e.stopPropagation();
+                                                setBlocks(p=>p.filter(x=>x.id!==blk.id));
+                                                try{ await deleteDoc(doc(fbDb,"blocks",blk.id)); }catch(er){}
+                                                addNotification("block_removed",`${masterObj?.firstName} удалил блок · ${blk.date}`, masterObj?.id, true);
+                                                setBlockToDelete(null);
+                                              }}>✓</button>
+                                            <button style={{fontSize:9,padding:"2px 6px",background:"rgba(255,255,255,.2)",border:"none",borderRadius:4,color:"#fff",cursor:"pointer"}}
+                                              onClick={e=>{e.stopPropagation();setBlockToDelete(null);}}>✕</button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="ab-block-label">
+                                          {blk.type==="break"?"☕ ":blk.type==="vacation"?"🏖️ ":"🚫 "}{blk.reason||(lang==="ru"?blk.type===("break")?"Перерыв":blk.type==="vacation"?"Отпуск":"Закрыто":blk.type)}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
