@@ -3906,6 +3906,25 @@ export default function App() {
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
                               <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*calZoom}}>
+                                {/* Hour/half-hour guide lines across full width */}
+                                {HOURS.map((h,hi)=>{
+                                  const isHour = h.endsWith(":00");
+                                  const isHalf = h.endsWith(":30");
+                                  if(!isHour&&!isHalf) return null;
+                                  return(
+                                    <div key={"line-"+h} style={{
+                                      position:"absolute",
+                                      top: hi*calZoom,
+                                      left:0,right:0,
+                                      height:0,
+                                      borderTop: isHour
+                                        ?"2px solid rgba(255,255,255,0.89)"
+                                        :"1px solid rgba(255,255,255,0.25)",
+                                      zIndex:1,
+                                      pointerEvents:"none",
+                                    }}/>
+                                  );
+                                })}
                                 {/* Current time line */}
                                 {fmtDate(d)===todayStr&&(()=>{
                                   const nowMins = nowTime.getHours()*60+nowTime.getMinutes();
