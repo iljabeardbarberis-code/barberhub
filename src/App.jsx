@@ -377,7 +377,7 @@ const INIT_SUBS = [
     perks_lt:["Neribota","VIP prioritetas","Visos paslaugos"] },
 ];
 
-const HOURS = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00"];
+const HOURS = ["09:00", "09:10", "09:20", "09:30", "09:40", "09:50", "10:00", "10:10", "10:20", "10:30", "10:40", "10:50", "11:00", "11:10", "11:20", "11:30", "11:40", "11:50", "12:00", "12:10", "12:20", "12:30", "12:40", "12:50", "13:00", "13:10", "13:20", "13:30", "13:40", "13:50", "14:00", "14:10", "14:20", "14:30", "14:40", "14:50", "15:00", "15:10", "15:20", "15:30", "15:40", "15:50", "16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:00", "17:10", "17:20", "17:30", "17:40", "17:50", "18:00", "18:10", "18:20", "18:30", "18:40", "18:50", "19:00", "19:10", "19:20", "19:30", "19:40", "19:50", "20:00"];
 const THEME_COLORS = ["#e8650a","#1fba7a","#c47cf5","#3b82f6","#ef4444","#f59e0b","#ec4899","#14b8a6","#f97316","#84cc16"];
 
 const DEMO_REVIEWS = [
@@ -1916,7 +1916,7 @@ export default function App() {
   const [calView, setCalView] = useState("week");
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const [masterDrawerOpen, setMasterDrawerOpen] = useState(false);
-  const [calZoom, setCalZoom] = useState(32);
+  const [calZoom, setCalZoom] = useState(20);
   const [nowTime, setNowTime] = useState(new Date());
   useEffect(()=>{
     const timer = setInterval(()=>setNowTime(new Date()), 60000);
@@ -3757,8 +3757,8 @@ export default function App() {
                       </div>
                       {/* Zoom controls */}
                       <div style={{display:"flex",gap:3,marginLeft:6}}>
-                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.max(20,z-8))}>−</button>
-                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.min(80,z+8))}>+</button>
+                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.max(10,z-4))}>−</button>
+                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.min(60,z+4))}>+</button>
                       </div>
                       <button className="btn b-sm" style={{background:mc,color:"var(--bg)"}} onClick={()=>openNewAppt(null)}>{t.new_appt}</button>
                       <button className="btn b-sm"
@@ -3782,7 +3782,7 @@ export default function App() {
                           ))}
                         </div>
                         <div className="cal-grid" style={{minHeight:HOURS.length*calZoom}}>
-                          <div>{HOURS.map(h=><div key={h} className="cal-hr" style={{height:calZoom}}>{h}</div>)}</div>
+                          <div>{HOURS.map((h,i)=><div key={h} className="cal-hr" style={{height:calZoom,fontSize:i%3===0?9:0,color:i%3===0?"var(--mu)":"transparent",borderBottom:i%3===0?"1px solid var(--border)":"1px solid rgba(255,255,255,0.03)"}}>{h}</div>)}</div>
                           {weekDates.map(d=>{
                             const ds=fmtDate(d);
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
