@@ -1931,18 +1931,10 @@ export default function App() {
   useEffect(()=>{
     if(page==="master" && mTab==="calendar"){
       document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
     } else {
       document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
     }
-    return ()=>{
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-    };
+    return ()=>{ document.body.style.overflow = ""; };
   },[page, mTab]);
 
   const [mTab, setMTabRaw] = useState(()=>{
