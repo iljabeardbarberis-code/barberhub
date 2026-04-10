@@ -3790,7 +3790,7 @@ export default function App() {
                   {calView==="week"&&(<>
                     {/* STICKY DATE HEADER — outside scroll area */}
                     <div className="cal-dh" style={{
-                      gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,
+                      gridTemplateColumns:`${Math.max(44,Math.min(72,28+calZoom))}px repeat(7,1fr)`,
                       position:"sticky",top:0,zIndex:20,
                     }}>
                       <div style={{borderBottom:"2px solid var(--border)",background:"rgba(14,10,6,.98)"}}/>
@@ -3861,10 +3861,10 @@ export default function App() {
                         swipeRef.current={active:false};
                       }}>
                       <div className="cal-week">
-                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(36,Math.min(64,20+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
+                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`${Math.max(44,Math.min(72,28+calZoom))}px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
                           {(()=>{
-                            const timeColW = Math.max(36, Math.min(64, 20+calZoom));
+                            const timeColW = Math.max(44, Math.min(72, 28+calZoom));
                             return(
                               <div style={{width:timeColW,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.08)"}}>
                                 {HOURS.map((h,i)=>{
@@ -3874,8 +3874,8 @@ export default function App() {
                                     : calZoom>=24 ? (isHour||isHalf)
                                     : isHour;
                                   const fontSize = isHour
-                                    ? Math.min(13,Math.max(9,calZoom/2.8))
-                                    : Math.min(11,Math.max(8,calZoom/3.5));
+                                    ? Math.min(13,Math.max(10,calZoom/2.8))
+                                    : Math.min(11,Math.max(9,calZoom/3.5));
                                   return(
                                     <div key={h} style={{
                                       height:calZoom,
