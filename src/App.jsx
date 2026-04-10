@@ -946,7 +946,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .cal-body{flex:1;overflow:auto;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;}
 .cal-week{display:flex;flex-direction:column;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .cal-dh{display:grid;border-bottom:2px solid var(--border);background:rgba(14,10,6,.98);}
-.cal-dhd{padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:var(--mu);border-left:1px solid var(--border);}
+.cal-dhd{padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:var(--mu);border-left:1px solid rgba(255,255,255,0.89);}
 .cal-dhd.td{color:var(--or);}
 .day-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;display:block;}
 .day-name{font-size:8px;letter-spacing:1px;text-transform:uppercase;}
@@ -3918,7 +3918,7 @@ export default function App() {
                                       left:0,right:0,
                                       height:0,
                                       borderTop: isHour
-                                        ?"2px solid rgba(255,255,255,0.89)"
+                                        ?"1px solid rgba(255,255,255,0.89)"
                                         :"1px solid rgba(255,255,255,0.25)",
                                       zIndex:1,
                                       pointerEvents:"none",
