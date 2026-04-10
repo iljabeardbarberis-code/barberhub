@@ -921,7 +921,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .ms-link:hover,.ms-link.on{color:var(--or);background:var(--ord);}
 .ms-icon{font-size:14px;width:18px;text-align:center;}
 .ms-badge{margin-left:auto;background:var(--or);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
-.mcon{flex:1;overflow:auto;display:flex;flex-direction:column;min-width:0;}
+.mcon{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
 .master-widget-btn{display:none;position:fixed;bottom:24px;left:20px;z-index:200;
   background:var(--or);color:var(--bg);border:none;border-radius:24px;
   padding:10px 18px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;
@@ -1151,6 +1151,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .cal-hd{padding:8px 10px;gap:6px;flex-wrap:wrap;}
   .cal-hd-title{font-size:13px;}
   .cal-hr{font-size:8px;padding:0 2px;}
+  .cal-body{height:calc(100vh - 160px)!important;}
   .owner-cab{flex-direction:column;}
   /* Owner panel — hide sidebar, show floating bubble */
   .owner-sb{display:none!important;}
