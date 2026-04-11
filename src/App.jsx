@@ -2600,8 +2600,19 @@ export default function App() {
     const updated = {...masterObj,...data};
     setMasters(p=>p.map(m=>m.id===masterObj.id?updated:m));
     if(data.firstName) setCur(c=>({...c,name:data.firstName}));
-    // Save to Firestore so discount is visible to all users
-    try{ await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated); }catch(e){}
+    // Find Firestore document by querying masters collection
+    try{
+      // Try saving with masterObj.id as key first
+      await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated);
+    }catch(e){
+      // If fails, find the doc by email and update
+      try{
+        const snap = await getDocs(query(collection(fbDb,"masters"), where("email","==",masterObj.email)));
+        if(!snap.empty){
+          await setDoc(snap.docs[0].ref, updated);
+        }
+      }catch(e2){ console.error("saveMasterProfile error:", e2); }
+    }
   };
 
   // Owner: create master
