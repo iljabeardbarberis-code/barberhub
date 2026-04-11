@@ -3,6 +3,22 @@ import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, where } from "firebase/firestore";
 
+
+// ── Telegram notifications ─────────────────────────────────────────────────
+const sendTelegramMessage = async (chatId, text) => {
+  const TOKEN = import.meta.env.VITE_TELEGRAM_TOKEN;
+  if(!TOKEN || !chatId) return;
+  // Clean chatId - remove @ if present, use as username
+  const chat = chatId.startsWith("@") ? chatId : chatId;
+  try{
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id:chat, text, parse_mode:"HTML"})
+    });
+  }catch(e){}
+};
+
 // ── Sound effects ──────────────────────────────────────────────────────────
 const playSuccessSound = () => {
   try{
@@ -438,7 +454,7 @@ const T = {
     settings_title:"НАСТРОЙКИ ПРОФИЛЯ",
     settings_personal:"Личные данные", settings_appearance:"Внешний вид",
     settings_schedule:"Рабочие часы", settings_about:"О себе",
-    s_firstname:"Имя", s_lastname:"Фамилия", s_phone:"Телефон", s_instagram:"Instagram",
+    s_firstname:"Имя", s_lastname:"Фамилия", s_phone:"Телефон", s_instagram:"Instagram", s_telegram:"Telegram (для уведомлений)",
     s_spec_ru:"Специализация (RU)", s_spec_lt:"Специализация (LT)",
     s_experience:"Опыт (лет)",
     s_about_ru:"О себе (RU)", s_about_lt:"О себе (LT)",
@@ -1487,6 +1503,7 @@ function MasterSettings({ master, onSave, t, lang }) {
           <div className="sf"><label>{t.s_lastname}</label><input value={form.lastName} onChange={e=>set("lastName",e.target.value)}/></div>
           <div className="sf"><label>{t.s_phone}</label><input value={form.phone} onChange={e=>set("phone",e.target.value)}/></div>
           <div className="sf"><label>{t.s_instagram}</label><input value={form.instagram} onChange={e=>set("instagram",e.target.value)} placeholder="@username"/></div>
+          <div className="sf"><label>📱 {lang==="ru"?"Telegram (для уведомлений)":"Telegram (pranešimams)"}</label><input value={form.telegram||""} onChange={e=>set("telegram",e.target.value)} placeholder="@username или chat_id"/></div>
           <div className="sf"><label>{t.s_experience}</label><input value={form.experience} onChange={e=>set("experience",e.target.value)} type="number" min="0" max="50"/></div>
         </div>
       </div>
@@ -2424,6 +2441,13 @@ export default function App() {
         `${cur.name} записался · ${date} ${time} · ${svcNames}`,
         master, true
       );
+      // Telegram notification to master
+      const tgMaster = masters.find(m=>String(m.id)===String(master));
+      if(tgMaster?.telegram){
+        await sendTelegramMessage(tgMaster.telegram,
+          `🔔 <b>Новая запись!</b>\n👤 ${cur.name}\n📅 ${date} в ${time}\n✂️ ${svcNames}\n📞 ${cur.phone||"—"}`
+        );
+      }
       setBkStatus("success");
       soundEnabled&&playSuccessSound();
       setTimeout(()=>{ setBkDone(true); setBkStatus(null); }, 1500);
@@ -2526,6 +2550,15 @@ export default function App() {
       `${lang==="ru"?"Запись отменена":"Rezervacija atšaukta"}: ${b.clientName} · ${b.date} ${b.time}`,
       b.masterId, true
     );
+    // Notify master via Telegram if cancelled by owner/client
+    if(!masterObj && b.clientEmail){
+      const tgMaster = masters.find(m=>String(m.id)===String(b.masterId));
+      if(tgMaster?.telegram){
+        sendTelegramMessage(tgMaster.telegram,
+          `❌ <b>Запись отменена</b>\n👤 ${b.clientName}\n📅 ${b.date} в ${b.time}`
+        );
+      }
+    }
   };
 
   // Reschedule a booking to new date+time
@@ -2581,7 +2614,7 @@ export default function App() {
       firstName:f.firstName, lastName:f.lastName,
       role_ru:f.role_ru||"Мастер", role_lt:f.role_lt||"Meistras",
       photo:"", emoji:f.emoji||"✂️", color:f.color||"#e8650a",
-      phone:"", about_ru:"", about_lt:"", experience:"", instagram:"",
+      phone:"", about_ru:"", about_lt:"", experience:"", instagram:"", telegram:"",
       workStart:"09:00", workEnd:"20:00",
       services:[
         { id:`s${Date.now()}_1`, name_ru:"Классическая стрижка", name_lt:"Klasikinis kirpimas", price:25, mins:45, cleanup:10, enabled:true },
