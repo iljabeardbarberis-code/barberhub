@@ -1739,7 +1739,11 @@ export default function App() {
   // ── Load masters from Firestore ─────────────────────────────────────────
   useEffect(()=>{
     const unsub = onSnapshot(collection(fbDb,"masters"), snap=>{
-      const firestoreMasters = snap.docs.map(d=>{ const data=d.data(); return {...data, id:data.id||d.id}; });
+      const firestoreMasters = snap.docs.map(d=>{
+        const data=d.data();
+        // Use Firestore doc ID as master ID for consistent save/load
+        return {...data, _docId:d.id, id:data.id||d.id};
+      });
       if(firestoreMasters.length > 0) setMasters(firestoreMasters);
     }, ()=>{});
     return ()=>unsub();
@@ -2600,19 +2604,19 @@ export default function App() {
     const updated = {...masterObj,...data};
     setMasters(p=>p.map(m=>m.id===masterObj.id?updated:m));
     if(data.firstName) setCur(c=>({...c,name:data.firstName}));
-    // Find Firestore document by querying masters collection
     try{
-      // Try saving with masterObj.id as key first
-      await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated);
-    }catch(e){
-      // If fails, find the doc by email and update
-      try{
+      // Use _docId (Firestore document key) if available, otherwise find by email
+      if(masterObj._docId){
+        await setDoc(doc(fbDb,"masters",masterObj._docId), updated);
+      } else {
         const snap = await getDocs(query(collection(fbDb,"masters"), where("email","==",masterObj.email)));
         if(!snap.empty){
           await setDoc(snap.docs[0].ref, updated);
+        } else {
+          await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated);
         }
-      }catch(e2){ console.error("saveMasterProfile error:", e2); }
-    }
+      }
+    }catch(e){ console.error("saveMasterProfile error:", e); }
   };
 
   // Owner: create master
@@ -2648,7 +2652,10 @@ export default function App() {
     const merged = {...updatedMaster,...f};
     setMasters(p=>p.map(m=>m.id===ownerMasterEdit?merged:m));
     setOwnerMasterEdit(null); setOwnerFormOpen(false); setOwnerFormErr("");
-    try{ await setDoc(doc(fbDb,"masters",String(ownerMasterEdit)), merged); }catch(e){}
+    try{
+      const docId = updatedMaster?._docId || String(ownerMasterEdit);
+      await setDoc(doc(fbDb,"masters",docId), merged);
+    }catch(e){}
   };
 
   // Owner: delete master
@@ -2661,8 +2668,12 @@ export default function App() {
   const ownerDeleteMaster = async (id) => {
     if(confirmDeleteId!==id){ setConfirmDeleteId(id); setTimeout(()=>setConfirmDeleteId(null),3000); return; }
     setConfirmDeleteId(null);
+    const mToDelete = masters.find(m=>m.id===id);
     setMasters(p=>p.filter(m=>m.id!==id));
-    try{ await deleteDoc(doc(fbDb,"masters",id)); }catch(e){}
+    try{
+      const docId = mToDelete?._docId || String(id);
+      await deleteDoc(doc(fbDb,"masters",docId));
+    }catch(e){}
   };
 
   // Owner: open edit form
