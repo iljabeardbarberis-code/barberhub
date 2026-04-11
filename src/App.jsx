@@ -2103,7 +2103,18 @@ export default function App() {
   const [blockMode, setBlockMode] = useState(false); // visual block selection mode
   const [blockSelectedSlots, setBlockSelectedSlots] = useState([]); // [{date,time}]
   const [blockTypeModal, setBlockTypeModal] = useState(false);
-  const [blockToDelete, setBlockToDelete] = useState(null); // show type picker
+  const [blockToDelete, setBlockToDelete] = useState(null);
+  const [portfolio, setPortfolio] = useState([]);
+  const [portfolioForm, setPortfolioForm] = useState({photo:"", serviceId:"", caption:""});
+  const [portfolioUploading, setPortfolioUploading] = useState(false);
+
+  // Load portfolio from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"portfolio"), snap=>{
+      setPortfolio(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]); // show type picker
   const [blockForm, setBlockForm] = useState({ date:todayStr, fromTime:"13:00", toTime:"14:00", allDay:false, type:"break", reason:"" });
   const [vacForm, setVacForm] = useState({ dateFrom:todayStr, dateTo:todayStr, reason:"" });
 
@@ -3469,6 +3480,37 @@ export default function App() {
                   ))}
                 </div>
               )}
+              {/* Portfolio */}
+              {(()=>{
+                const masterPortfolio = portfolio
+                  .filter(p=>String(p.masterId)===String(selectedMaster.id))
+                  .sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+                if(masterPortfolio.length===0) return null;
+                return(
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,marginBottom:10,color:selectedMaster.color}}>
+                      {lang==="ru"?"РАБОТЫ":"DARBAI"}
+                    </div>
+                    {/* Carousel */}
+                    <div style={{display:"flex",gap:8,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollSnapType:"x mandatory",paddingBottom:8}}>
+                      {masterPortfolio.map((item,i)=>{
+                        const svc=(selectedMaster.services||[]).find(s=>s.id===item.serviceId);
+                        return(
+                          <div key={item.id} style={{flexShrink:0,width:200,scrollSnapAlign:"start"}}>
+                            <div style={{borderRadius:12,overflow:"hidden",background:"var(--card)",border:`1px solid ${selectedMaster.color}33`}}>
+                              <img src={item.photo} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
+                              <div style={{padding:"8px 10px"}}>
+                                {svc&&<div style={{fontSize:11,fontWeight:700,color:selectedMaster.color}}>{lang==="ru"?svc.name_ru:svc.name_lt}</div>}
+                                {item.caption&&<div style={{fontSize:11,color:"var(--mu2)",marginTop:2}}>{item.caption}</div>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Reviews */}
               {reviews.filter(r=>String(r.masterId)===String(selectedMaster.id)).length>0&&(
                 <div>
@@ -3759,6 +3801,7 @@ export default function App() {
                       {key:"clients", icon:"👥",label:t.clients_tab,badge:masterClients.length||null},
                       {key:"stats",   icon:"📊",label:t.stats_tab},
                       {key:"reviews", icon:"⭐",label:t.reviews_tab},
+                      {key:"portfolio",icon:"🖼️",label:lang==="ru"?"Фото работ":"Darbų nuotraukos"},
                       {key:"settings",icon:"⚙️",label:t.settings_tab},
                     ].map(item=>(
                       <button key={item.key} className="master-drawer-item"
@@ -3794,6 +3837,7 @@ export default function App() {
                   {key:"clients", icon:"👥",label:t.clients_tab,badge:masterClients.length||null},
                   {key:"stats",   icon:"📊",label:t.stats_tab},
                   {key:"reviews", icon:"⭐",label:t.reviews_tab,badge:reviews.filter(r=>String(r.masterId)===String(masterObj.id)).length||null},
+                  {key:"portfolio",icon:"🖼️",label:lang==="ru"?"Фото работ":"Darbų nuotraukos"},
                   {key:"settings",icon:"⚙️",label:t.settings_tab},
                 ].map(item=>(
                   <button key={item.key} className={`ms-link${mTab===item.key?" on":""}`}
@@ -3816,6 +3860,110 @@ export default function App() {
 
                 {/* SETTINGS */}
                 {mTab==="settings"&&<MasterSettings master={masterObj} onSave={saveMasterProfile} t={t} lang={lang}/>}
+
+                {/* PORTFOLIO TAB */}
+                {mTab==="portfolio"&&(
+                  <div style={{padding:18}}>
+                    <div className="stag">🖼️ {lang==="ru"?"Фото работ":"Darbų nuotraukos"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1,marginBottom:16}}>
+                      {lang==="ru"?"МОИ РАБОТЫ":"MANO DARBAI"}
+                    </h2>
+
+                    {/* Upload form */}
+                    <div style={{background:"var(--card)",border:`1px solid ${mc}44`,borderRadius:14,padding:16,marginBottom:20}}>
+                      <div style={{fontWeight:700,fontSize:13,marginBottom:12,color:mc}}>
+                        + {lang==="ru"?"Добавить фото":"Pridėti nuotrauką"}
+                      </div>
+
+                      {/* Photo upload */}
+                      <div className="field">
+                        <label>{lang==="ru"?"Фото":"Nuotrauka"}</label>
+                        <input type="file" accept="image/*" onChange={e=>{
+                          const file=e.target.files?.[0]; if(!file) return;
+                          const r=new FileReader();
+                          r.onload=ev=>setPortfolioForm(f=>({...f,photo:ev.target.result}));
+                          r.readAsDataURL(file);
+                        }}/>
+                        {portfolioForm.photo&&(
+                          <img src={portfolioForm.photo} alt="" style={{width:"100%",maxHeight:200,objectFit:"cover",borderRadius:8,marginTop:8}}/>
+                        )}
+                      </div>
+
+                      {/* Service selector */}
+                      <div className="field">
+                        <label>{lang==="ru"?"Услуга":"Paslauga"}</label>
+                        <select value={portfolioForm.serviceId} onChange={e=>setPortfolioForm(f=>({...f,serviceId:e.target.value}))}>
+                          <option value="">— {lang==="ru"?"Выберите услугу":"Pasirinkite paslaugą"}</option>
+                          {(masterObj.services||[]).filter(s=>s.enabled).map(s=>(
+                            <option key={s.id} value={s.id}>{lang==="ru"?s.name_ru:s.name_lt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Caption */}
+                      <div className="field">
+                        <label>{lang==="ru"?"Описание (необязательно)":"Aprašymas (neprivaloma)"}</label>
+                        <input value={portfolioForm.caption} onChange={e=>setPortfolioForm(f=>({...f,caption:e.target.value}))}
+                          placeholder={lang==="ru"?"Классическая стрижка...":"Klasikinis kirpimas..."}/>
+                      </div>
+
+                      <button className="btn b-lg b-full"
+                        style={{background:portfolioForm.photo&&portfolioForm.serviceId?mc:"var(--border)",color:"var(--bg)",fontWeight:800,marginTop:4}}
+                        disabled={!portfolioForm.photo||!portfolioForm.serviceId||portfolioUploading}
+                        onClick={async()=>{
+                          if(!portfolioForm.photo||!portfolioForm.serviceId) return;
+                          setPortfolioUploading(true);
+                          try{
+                            await addDoc(collection(fbDb,"portfolio"),{
+                              masterId:String(masterObj.id),
+                              photo:portfolioForm.photo,
+                              serviceId:portfolioForm.serviceId,
+                              caption:portfolioForm.caption||"",
+                              createdAt:new Date().toISOString(),
+                            });
+                            setPortfolioForm({photo:"",serviceId:"",caption:""});
+                          }catch(e){}
+                          setPortfolioUploading(false);
+                        }}>
+                        {portfolioUploading?(lang==="ru"?"Сохранение...":"Išsaugoma..."):(lang==="ru"?"Опубликовать":"Paskelbti")}
+                      </button>
+                    </div>
+
+                    {/* My portfolio grid */}
+                    {(()=>{
+                      const myPortfolio = portfolio.filter(p=>String(p.masterId)===String(masterObj.id))
+                        .sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+                      if(myPortfolio.length===0) return(
+                        <div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:24}}>
+                          {lang==="ru"?"Фото пока нет. Добавьте первую работу!":"Nuotraukų dar nėra. Pridėkite pirmą darbą!"}
+                        </div>
+                      );
+                      return(
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+                          {myPortfolio.map(item=>{
+                            const svc=(masterObj.services||[]).find(s=>s.id===item.serviceId);
+                            return(
+                              <div key={item.id} style={{position:"relative",borderRadius:10,overflow:"hidden",background:"var(--card)",border:"1px solid var(--b2)"}}>
+                                <img src={item.photo} alt="" style={{width:"100%",aspectRatio:"1",objectFit:"cover",display:"block"}}/>
+                                <div style={{padding:"6px 8px"}}>
+                                  <div style={{fontSize:10,fontWeight:700,color:mc,marginBottom:2}}>
+                                    {svc?(lang==="ru"?svc.name_ru:svc.name_lt):""}
+                                  </div>
+                                  {item.caption&&<div style={{fontSize:10,color:"var(--mu2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.caption}</div>}
+                                </div>
+                                <button onClick={async()=>{
+                                  try{ await deleteDoc(doc(fbDb,"portfolio",item.id)); }catch(e){}
+                                }} style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.6)",border:"none",borderRadius:"50%",width:24,height:24,color:"#fff",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                  ✕
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* CALENDAR */}
                 {mTab==="calendar"&&<>
