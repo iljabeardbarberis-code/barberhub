@@ -921,7 +921,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .ms-link:hover,.ms-link.on{color:var(--or);background:var(--ord);}
 .ms-icon{font-size:14px;width:18px;text-align:center;}
 .ms-badge{margin-left:auto;background:var(--or);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:9px;}
-.mcon{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;height:100%;overscroll-behavior:none;}
+.mcon{flex:1;display:flex;flex-direction:column;min-width:0;}
 .master-widget-btn{display:none;position:fixed;bottom:24px;left:20px;z-index:200;
   background:var(--or);color:var(--bg);border:none;border-radius:24px;
   padding:10px 18px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;
@@ -1932,7 +1932,7 @@ export default function App() {
   });
   const setMTab = (t) => { setMTabRaw(t); try{ localStorage.setItem("barberhub_mTab",t); }catch(e){} };
 
-  // Lock body scroll when on calendar - placed after mTab declaration
+  // Lock body scroll ONLY when on calendar tab
   useEffect(()=>{
     if(page==="master" && mTab==="calendar"){
       document.body.style.overflow = "hidden";
@@ -3755,7 +3755,7 @@ export default function App() {
               </div>
 
               {/* CONTENT */}
-              <div className="mcon">
+              <div className="mcon" style={mTab==="calendar"?{overflow:"hidden",height:"100%",overscrollBehavior:"none"}:{overflow:"auto"}}>
 
                 {/* SETTINGS */}
                 {mTab==="settings"&&<MasterSettings master={masterObj} onSave={saveMasterProfile} t={t} lang={lang}/>}
