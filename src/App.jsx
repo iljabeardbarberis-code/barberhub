@@ -1960,7 +1960,7 @@ export default function App() {
   const pinchRef = useRef({active:false, startDist:0, startZoom:32});
   const swipeRef = useRef({active:false});
   const [weekSlide, setWeekSlide] = useState(null);
-  const [weekFlash, setWeekFlash] = useState(false);
+
   const calBodyRef = useRef(null);
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
@@ -3769,15 +3769,13 @@ export default function App() {
                       <button className="btn b-card b-sm" onClick={()=>setWeekAnchor(new Date())}>{t.cal_today}</button>
                       <button className="btn b-card b-sm" onClick={()=>{
   setWeekSlide("right");
-  setWeekFlash(true);
-  setTimeout(()=>{setWeekSlide(null);setWeekFlash(false);},400);
+  setTimeout(()=>setWeekSlide(null),380);
   const d=new Date(weekAnchor);d.setDate(d.getDate()-7);setWeekAnchor(d);
 }}>{t.prev_week}</button>
                       <div className="cal-hd-title">{weekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {weekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short",year:"numeric"})}</div>
                       <button className="btn b-card b-sm" onClick={()=>{
   setWeekSlide("left");
-  setWeekFlash(true);
-  setTimeout(()=>{setWeekSlide(null);setWeekFlash(false);},400);
+  setTimeout(()=>setWeekSlide(null),380);
   const d=new Date(weekAnchor);d.setDate(d.getDate()+7);setWeekAnchor(d);
 }}>{t.next_week}</button>
                     </div>
@@ -3801,24 +3799,7 @@ export default function App() {
                   </div>
 
                   {calView==="week"&&(<>
-                    {/* Week flash indicator */}
-                    {weekFlash&&(
-                      <div style={{
-                        position:"fixed",top:"50%",left:"50%",
-                        transform:"translate(-50%,-50%)",
-                        background:"rgba(232,101,10,0.92)",
-                        color:"#fff",borderRadius:16,
-                        padding:"10px 22px",
-                        fontFamily:"'Bebas Neue',sans-serif",
-                        fontSize:20,letterSpacing:2,
-                        zIndex:100,pointerEvents:"none",
-                        animation:"weekFlashAnim .4s ease",
-                        backdropFilter:"blur(4px)",
-                        boxShadow:"0 4px 24px rgba(232,101,10,.5)",
-                      }}>
-                        {weekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} — {weekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})}
-                      </div>
-                    )}
+
                     {/* STICKY DATE HEADER — outside scroll area */}
                     <div className="cal-dh" style={{
                       gridTemplateColumns:`48px repeat(7,1fr)`,
@@ -3881,8 +3862,7 @@ export default function App() {
                           if(Math.abs(dx)>60){
                             const dir=dx<0?"left":"right";
                             setWeekSlide(dir);
-                            setWeekFlash(true);
-                            setTimeout(()=>{setWeekSlide(null);setWeekFlash(false);},400);
+                            setTimeout(()=>setWeekSlide(null),380);
                             const d=new Date(weekAnchor);
                             d.setDate(d.getDate()+(dx<0?7:-7));
                             setWeekAnchor(d);
