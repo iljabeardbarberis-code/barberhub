@@ -422,8 +422,8 @@ const T = {
     hero_sub:"Профессиональная мужская стрижка. Бритьё. Уход за бородой.",
     hero_cta:"Записаться онлайн", hero_services:"Услуги и цены",
     clients:"клиентов", years:"лет", masters_count:"мастера",
-    services_title:"УСЛУГИ", masters_title:"МАСТЕРА", sub_title:"ПОДПИСКА",
-    services_tag:"Прайс-лист", masters_tag:"Команда", sub_tag:"Абонементы",
+    services_title:"ПОПУЛЯРНЫЕ УСЛУГИ", masters_title:"МАСТЕРА", sub_title:"ПОДПИСКА",
+    services_tag:"Бестселлеры", masters_tag:"Команда", sub_tag:"Абонементы",
     sub_desc:"Посещайте чаще — платите меньше.",
     sub_per_month:"/ мес", sub_activate:"Оформить", sub_active:"Активна ✓", sub_popular:"Популярный", sub_my:"Моя подписка",
     book_online:"Онлайн-запись", step1:"1. Услуга", step2:"2. Мастер", step3:"3. Дата", step4:"4. Время",
@@ -609,8 +609,8 @@ const T = {
     hero_sub:"Profesionalus vyrų kirpimas. Skutimasis. Barzdos priežiūra.",
     hero_cta:"Registruotis internetu", hero_services:"Paslaugos ir kainos",
     clients:"klientų", years:"metai", masters_count:"meistrai",
-    services_title:"PASLAUGOS", masters_title:"MEISTRAI", sub_title:"PRENUMERATA",
-    services_tag:"Kainų sąrašas", masters_tag:"Komanda", sub_tag:"Abonementai",
+    services_title:"POPULIARIOS PASLAUGOS", masters_title:"MEISTRAI", sub_title:"PRENUMERATA",
+    services_tag:"Populiariausios", masters_tag:"Komanda", sub_tag:"Abonementai",
     sub_desc:"Lankykitės dažniau – mokėkite mažiau.",
     sub_per_month:"/ mėn", sub_activate:"Įsigyti", sub_active:"Aktyvi ✓", sub_popular:"Populiariausias", sub_my:"Mano prenumerata",
     book_online:"Registracija internetu", step1:"1. Paslauga", step2:"2. Meistras", step3:"3. Data", step4:"4. Laikas",
@@ -866,6 +866,11 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .stag.g{color:var(--gr);}
 .stitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,58px);margin-bottom:28px;letter-spacing:2px;}
 .svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--border);}
+.svc-carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;scrollbar-width:none;}
+.svc-carousel::-webkit-scrollbar{display:none;}
+.svc-carousel-item{flex-shrink:0;width:220px;scroll-snap-align:start;background:var(--card);border-radius:14px;border:1px solid var(--b2);padding:18px;position:relative;overflow:hidden;transition:border-color .2s;}
+.svc-carousel-item:hover{border-color:var(--or);}
+.svc-rank{position:absolute;top:10px;right:10px;background:var(--or);color:var(--bg);font-family:"Bebas Neue",sans-serif;font-size:11px;padding:2px 7px;border-radius:20px;letter-spacing:1px;}
 .svc-card{background:var(--card);padding:22px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
 .svc-card::after{content:'';position:absolute;bottom:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--or),var(--gr));transition:width .28s;}
 .svc-card:hover::after,.svc-card.sel::after{width:100%;}
@@ -2869,32 +2874,59 @@ export default function App() {
             <div className="stag">{t.services_tag}</div>
             <h2 className="stitle">{t.services_title}</h2>
             {(()=>{
-              // Собираем все уникальные услуги из всех мастеров
+              // Collect all unique services with booking count
+              const serviceStats = {};
+              bookings.filter(b=>b.status!=="cancelled").forEach(b=>{
+                const ids = Array.isArray(b.serviceIds)?b.serviceIds:(b.serviceId?[b.serviceId]:[]);
+                ids.forEach(id=>{ serviceStats[id]=(serviceStats[id]||0)+1; });
+              });
+
               const allServices = [];
               const seen = new Set();
               masters.forEach(m=>{
                 (m.services||[]).filter(s=>s.enabled!==false).forEach(s=>{
-                  const key = (lang==="ru" ? s.name_ru : s.name_lt)||s.name||"";
-                  if(key && !seen.has(key)){
+                  const key=(lang==="ru"?s.name_ru:s.name_lt)||s.name||"";
+                  if(key&&!seen.has(key)){
                     seen.add(key);
-                    allServices.push({...s, masterColor: m.color});
+                    allServices.push({
+                      ...s,
+                      masterColor:m.color,
+                      masterId:m.id,
+                      bookCount:serviceStats[s.id]||0
+                    });
                   }
                 });
               });
+
               if(allServices.length===0) return(
                 <div style={{color:"var(--mu)",fontSize:14,padding:"20px 0"}}>
                   {lang==="ru"?"Услуги скоро появятся":"Paslaugos netrukus atsiras"}
                 </div>
               );
+
+              // Sort: least booked first (show as "popular" to boost them)
+              const sorted = [...allServices].sort((a,b)=>a.bookCount-b.bookCount);
+
               return(
-                <div className="svc-grid">
-                  {allServices.map((s,i)=>(
-                    <div key={i} className="svc-card">
-                      <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:s.masterColor||"var(--or)",borderRadius:"0 0 0 0"}}/>
-                      <div className="sn">{lang==="ru"?s.name_ru:s.name_lt}</div>
-                      <div className="sm">
-                        <div className="sp">{s.price}€ <small>/ {s.mins} {t.min}</small></div>
-                        <button className="btn b-or b-sm" onClick={goBook}>{t.book_btn}</button>
+                <div className="svc-carousel">
+                  {sorted.map((s,i)=>(
+                    <div key={i} className="svc-carousel-item" style={{borderTopColor:s.masterColor}}>
+                      {/* Top accent line */}
+                      <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:s.masterColor,borderRadius:"14px 14px 0 0"}}/>
+                      {/* Popular badge */}
+                      <div className="svc-rank">
+                        {i===0?(lang==="ru"?"🔥 ХИТ":"🔥 HIT"):i<3?(lang==="ru"?"⭐ ТОП":"⭐ TOP"):(lang==="ru"?"✓ ПОПУЛЯРНО":"✓ POPULIARU")}
+                      </div>
+                      <div style={{marginTop:8}}>
+                        <div className="sn" style={{fontSize:16,marginBottom:8}}>{lang==="ru"?s.name_ru:s.name_lt}</div>
+                        <div style={{fontSize:12,color:"var(--mu2)",marginBottom:14}}>⏱ {s.mins} {t.min}</div>
+                        <div className="sm">
+                          <div className="sp" style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22}}>{s.price}€</div>
+                          <button className="btn b-or b-sm" onClick={()=>{
+                            setBk(b=>({...b,master:s.masterId,services:[s.id]}));
+                            goBook();
+                          }}>{t.book_btn}</button>
+                        </div>
                       </div>
                     </div>
                   ))}
