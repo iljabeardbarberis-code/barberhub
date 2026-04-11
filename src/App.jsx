@@ -971,7 +971,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .now-dot{position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--or);}
 .now-label{position:absolute;left:-42px;top:-8px;font-size:9px;color:var(--or);font-weight:800;white-space:nowrap;}
 .touch-ghost{position:fixed;z-index:9999;background:var(--or);color:var(--bg);padding:6px 12px;borderRadius:8px;fontSize:12px;fontWeight:800;pointerEvents:none;transform:translate(-50%,-120%);white-space:nowrap;boxShadow:0 4px 16px rgba(232,101,10,.5);}
-.ab{position:absolute;left:2px;right:2px;top:2px;border-radius:5px;padding:4px 6px;cursor:grab;overflow:hidden;z-index:5;transition:transform .15s,opacity .2s;user-select:none;}
+.ab{position:absolute;left:2px;right:2px;top:2px;border-radius:5px;padding:4px 6px;cursor:grab;overflow:hidden;z-index:5;transition:transform .15s,opacity .2s;user-select:none;touch-action:none;-webkit-user-select:none;}
 .ab:hover{transform:scale(1.03);box-shadow:0 4px 14px rgba(0,0,0,.5);}
 .ab:active{cursor:grabbing;}
 .ab.dragging{opacity:.3;transform:scale(.95);}
@@ -4018,6 +4018,7 @@ export default function App() {
                                       style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                   onTouchStart={e=>{
                                     e.stopPropagation();
+                                    e.preventDefault(); // prevent browser scroll immediately
                                     const touch=e.touches[0];
                                     const apptId=appt.id;
                                     const apptName=appt.clientName;
