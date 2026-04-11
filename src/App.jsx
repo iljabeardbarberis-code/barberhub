@@ -1959,6 +1959,7 @@ export default function App() {
   const touchDragRef = useRef({id:null, timer:null, active:false});
   const pinchRef = useRef({active:false, startDist:0, startZoom:32});
   const swipeRef = useRef({active:false});
+  const [weekSlide, setWeekSlide] = useState(null); // "left" | "right" | null
   const calBodyRef = useRef(null);
   const [dragOver, setDragOver] = useState(null);       // "date|time" string of hovered cell
   const [rescheduleAppt, setRescheduleAppt] = useState(null); // booking being manually rescheduled
@@ -3765,9 +3766,17 @@ export default function App() {
                   <div className="cal-hd">
                     <div className="cal-nav">
                       <button className="btn b-card b-sm" onClick={()=>setWeekAnchor(new Date())}>{t.cal_today}</button>
-                      <button className="btn b-card b-sm" onClick={()=>{const d=new Date(weekAnchor);d.setDate(d.getDate()-7);setWeekAnchor(d);}}>{t.prev_week}</button>
+                      <button className="btn b-card b-sm" onClick={()=>{
+  setWeekSlide("right");
+  setTimeout(()=>setWeekSlide(null),260);
+  const d=new Date(weekAnchor);d.setDate(d.getDate()-7);setWeekAnchor(d);
+}}>{t.prev_week}</button>
                       <div className="cal-hd-title">{weekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {weekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short",year:"numeric"})}</div>
-                      <button className="btn b-card b-sm" onClick={()=>{const d=new Date(weekAnchor);d.setDate(d.getDate()+7);setWeekAnchor(d);}}>{t.next_week}</button>
+                      <button className="btn b-card b-sm" onClick={()=>{
+  setWeekSlide("left");
+  setTimeout(()=>setWeekSlide(null),260);
+  const d=new Date(weekAnchor);d.setDate(d.getDate()+7);setWeekAnchor(d);
+}}>{t.next_week}</button>
                     </div>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div className="cal-tabs">
@@ -3849,6 +3858,9 @@ export default function App() {
                         if(swipeRef.current.active&&swipeRef.current.moved){
                           const dx=swipeRef.current.dx||0;
                           if(Math.abs(dx)>60){
+                            const dir=dx<0?"left":"right";
+                            setWeekSlide(dir);
+                            setTimeout(()=>setWeekSlide(null),260);
                             const d=new Date(weekAnchor);
                             d.setDate(d.getDate()+(dx<0?7:-7));
                             setWeekAnchor(d);
@@ -3861,7 +3873,7 @@ export default function App() {
                         pinchRef.current.active=false;
                         swipeRef.current={active:false};
                       }}>
-                      <div className="cal-week">
+                      <div className={`cal-week${weekSlide?" slide-"+weekSlide:""}`}>
                         <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`48px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
                           {(()=>{
