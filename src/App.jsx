@@ -3880,9 +3880,22 @@ export default function App() {
                         <label>{lang==="ru"?"Фото":"Nuotrauka"}</label>
                         <input type="file" accept="image/*" onChange={e=>{
                           const file=e.target.files?.[0]; if(!file) return;
-                          const r=new FileReader();
-                          r.onload=ev=>setPortfolioForm(f=>({...f,photo:ev.target.result}));
-                          r.readAsDataURL(file);
+                          // Compress image using canvas before storing
+                          const img=new Image();
+                          const url=URL.createObjectURL(file);
+                          img.onload=()=>{
+                            const canvas=document.createElement("canvas");
+                            const MAX=800;
+                            let w=img.width, h=img.height;
+                            if(w>h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
+                            else { if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
+                            canvas.width=w; canvas.height=h;
+                            canvas.getContext("2d").drawImage(img,0,0,w,h);
+                            const compressed=canvas.toDataURL("image/jpeg",0.7);
+                            setPortfolioForm(f=>({...f,photo:compressed}));
+                            URL.revokeObjectURL(url);
+                          };
+                          img.src=url;
                         }}/>
                         {portfolioForm.photo&&(
                           <img src={portfolioForm.photo} alt="" style={{width:"100%",maxHeight:200,objectFit:"cover",borderRadius:8,marginTop:8}}/>
@@ -3921,8 +3934,11 @@ export default function App() {
                               caption:portfolioForm.caption||"",
                               createdAt:new Date().toISOString(),
                             });
+                            // Only clear form on success
                             setPortfolioForm({photo:"",serviceId:"",caption:""});
-                          }catch(e){}
+                          }catch(e){
+                            alert(lang==="ru"?"Ошибка: фото слишком большое. Попробуйте другое.":"Klaida: nuotrauka per didelė.");
+                          }
                           setPortfolioUploading(false);
                         }}>
                         {portfolioUploading?(lang==="ru"?"Сохранение...":"Išsaugoma..."):(lang==="ru"?"Опубликовать":"Paskelbti")}
