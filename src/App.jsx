@@ -4032,6 +4032,7 @@ export default function App() {
                                     if(!touchDragRef.current.active||touchDragRef.current.id!==appt.id) return;
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    document.body.style.overflow="hidden";
                                     const touch=e.touches[0];
                                     setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} → ?`});
                                     const el=document.elementFromPoint(touch.clientX,touch.clientY);
@@ -4040,8 +4041,29 @@ export default function App() {
                                       const[,t]=el.dataset.cellkey.split("|");
                                       if(t) setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${appt.clientName} → ${t}`});
                                     }
+                                    // Auto-scroll cal-body when near edges
+                                    const calBody = calBodyRef.current;
+                                    if(calBody){
+                                      const rect = calBody.getBoundingClientRect();
+                                      const y = touch.clientY;
+                                      const threshold = 80;
+                                      const speed = 8;
+                                      if(y > rect.bottom - threshold){
+                                        calBody.scrollTop += speed;
+                                      } else if(y < rect.top + threshold){
+                                        calBody.scrollTop -= speed;
+                                      }
+                                      // Horizontal auto-scroll
+                                      const x = touch.clientX;
+                                      if(x > rect.right - 40){
+                                        calBody.scrollLeft += speed;
+                                      } else if(x < rect.left + 60){
+                                        calBody.scrollLeft -= speed;
+                                      }
+                                    }
                                   }}
                                   onTouchEnd={e=>{
+                                    document.body.style.overflow="";
                                     clearTimeout(touchDragRef.current.timer);
                                     if(touchDragRef.current.active&&touchDragRef.current.id===appt.id){
                                       const touch=e.changedTouches[0];
@@ -4056,6 +4078,7 @@ export default function App() {
                                     setDragOver(null);
                                   }}
                                   onTouchCancel={()=>{
+                                    document.body.style.overflow="";
                                     clearTimeout(touchDragRef.current.timer);
                                     touchDragRef.current={id:null,timer:null,active:false};
                                     setTouchDragGhost(null);
