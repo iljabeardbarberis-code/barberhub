@@ -4017,19 +4017,38 @@ export default function App() {
                                       className={`ab${appt.status==="done"?" done":""}${isDragging?" dragging":""}`}
                                       style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                   onTouchStart={e=>{
+                                    e.stopPropagation();
                                     const touch=e.touches[0];
                                     const apptId=appt.id;
                                     const apptName=appt.clientName;
-                                    const apptTime=appt.time;
                                     clearTimeout(touchDragRef.current.timer);
-                                    touchDragRef.current={id:apptId,active:false,timer:null};
+                                    touchDragRef.current={
+                                      id:apptId,active:false,timer:null,
+                                      startX:touch.clientX,startY:touch.clientY
+                                    };
                                     touchDragRef.current.timer=setTimeout(()=>{
                                       touchDragRef.current.active=true;
+                                      // Lock scroll immediately when drag activates
+                                      if(calBodyRef.current) calBodyRef.current.style.overflow="hidden";
+                                      document.body.style.overflow="hidden";
                                       setTouchDragGhost({x:touch.clientX,y:touch.clientY,label:`${apptName} → ?`});
-                                    },500);
+                                    },400);
                                   }}
                                   onTouchMove={e=>{
-                                    if(!touchDragRef.current.active||touchDragRef.current.id!==appt.id) return;
+                                    // If not yet active, check if user is scrolling (big movement = cancel drag)
+                                    if(!touchDragRef.current.active){
+                                      if(touchDragRef.current.id===appt.id){
+                                        const dx=Math.abs(e.touches[0].clientX-touchDragRef.current.startX);
+                                        const dy=Math.abs(e.touches[0].clientY-touchDragRef.current.startY);
+                                        if(dx>10||dy>10){
+                                          // User is scrolling - cancel pending drag
+                                          clearTimeout(touchDragRef.current.timer);
+                                          touchDragRef.current={id:null,timer:null,active:false};
+                                        }
+                                      }
+                                      return;
+                                    }
+                                    if(touchDragRef.current.id!==appt.id) return;
                                     e.preventDefault();
                                     e.stopPropagation();
                                     document.body.style.overflow="hidden";
@@ -4064,6 +4083,7 @@ export default function App() {
                                   }}
                                   onTouchEnd={e=>{
                                     document.body.style.overflow="";
+                                    if(calBodyRef.current) calBodyRef.current.style.overflow="";
                                     clearTimeout(touchDragRef.current.timer);
                                     if(touchDragRef.current.active&&touchDragRef.current.id===appt.id){
                                       const touch=e.changedTouches[0];
@@ -4079,6 +4099,7 @@ export default function App() {
                                   }}
                                   onTouchCancel={()=>{
                                     document.body.style.overflow="";
+                                    if(calBodyRef.current) calBodyRef.current.style.overflow="";
                                     clearTimeout(touchDragRef.current.timer);
                                     touchDragRef.current={id:null,timer:null,active:false};
                                     setTouchDragGhost(null);
