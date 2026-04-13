@@ -2112,7 +2112,8 @@ export default function App() {
   const [blockToDelete, setBlockToDelete] = useState(null);
   const [portfolio, setPortfolio] = useState([]);
   const [products, setProducts] = useState([]);
-  const [productForm, setProductForm] = useState({name:"",description:"",price:"",photo:"",category:""});
+  const [productForm, setProductForm] = useState({name:"",description:"",price:"",photo:"",category:"",inStock:true});
+  const [editingProduct, setEditingProduct] = useState(null);
   const [productSaving, setProductSaving] = useState(false);
 
   // Load products from Firestore
@@ -3533,13 +3534,28 @@ export default function App() {
                 {selectedProduct.description&&(
                   <p style={{fontSize:14,color:"var(--mu2)",lineHeight:1.7,marginBottom:16}}>{selectedProduct.description}</p>
                 )}
+                {/* Stock status */}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"10px 14px",background:selectedProduct.inStock!==false?"rgba(31,186,122,.1)":"rgba(255,50,50,.1)",borderRadius:10,border:`1px solid ${selectedProduct.inStock!==false?"var(--gr)":"var(--red)"}`}}>
+                  <span style={{fontSize:16}}>{selectedProduct.inStock!==false?"✅":"❌"}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:selectedProduct.inStock!==false?"var(--gr)":"var(--red)"}}>
+                    {selectedProduct.inStock!==false
+                      ?(lang==="ru"?"В наличии":"Yra sandėlyje")
+                      :(lang==="ru"?"Нет в наличии":"Nėra sandėlyje")}
+                  </span>
+                </div>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  <div style={{padding:"12px 16px",background:"var(--card2)",borderRadius:10,fontSize:13,color:"var(--mu2)",textAlign:"center"}}>
-                    {lang==="ru"?"Узнать о наличии у мастера на записи":"Apie prieinamumą paklauskite meistro vizito metu"}
-                  </div>
-                  <button className="btn b-lg b-full" style={{background:"var(--or)",color:"#fff",fontWeight:800}}
+                  {selectedProduct.inStock!==false
+                    ? <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800}}
+                        onClick={()=>{setSelectedProduct(null);goBook();}}>
+                        🛒 {lang==="ru"?"Купить на визите":"Įsigyti vizito metu"}
+                      </button>
+                    : <div style={{padding:"12px 16px",background:"var(--card2)",borderRadius:10,fontSize:13,color:"var(--mu2)",textAlign:"center"}}>
+                        {lang==="ru"?"Товар скоро появится в наличии":"Prekė netrukus atsiras"}
+                      </div>
+                  }
+                  <button className="btn b-lg b-full" style={{background:"var(--card2)",color:"var(--mu)",fontWeight:700}}
                     onClick={()=>setSelectedProduct(null)}>
-                    ← {lang==="ru"?"Назад к каталогу":"Atgal į katalogą"}
+                    ← {lang==="ru"?"Назад":"Atgal"}
                   </button>
                 </div>
               </div>
@@ -4905,14 +4921,14 @@ export default function App() {
                       {lang==="ru"?"НАШИ ПРОДУКТЫ":"MŪSŲ PRODUKTAI"}
                     </h2>
 
-                    {/* Add product form */}
-                    <div style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:14,padding:18,marginBottom:20}}>
-                      <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:"var(--gold)"}}>
-                        + {lang==="ru"?"Добавить продукт":"Pridėti produktą"}
+                    {/* Add / Edit product form */}
+                    <div style={{background:"var(--card)",border:`1px solid ${editingProduct?"var(--or)":"var(--b2)"}`,borderRadius:14,padding:18,marginBottom:20}}>
+                      <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:editingProduct?"var(--or)":"var(--gold)"}}>
+                        {editingProduct?(lang==="ru"?"✏️ Редактировать продукт":"✏️ Redaguoti produktą"):`+ ${lang==="ru"?"Добавить продукт":"Pridėti produktą"}`}
                       </div>
                       <div className="g2">
                         <div className="field"><label>{lang==="ru"?"Название":"Pavadinimas"}</label>
-                          <input value={productForm.name} onChange={e=>setProductForm(f=>({...f,name:e.target.value}))} placeholder={lang==="ru"?"Шампунь Kerastase":"Šampūnas Kerastase"}/></div>
+                          <input value={productForm.name} onChange={e=>setProductForm(f=>({...f,name:e.target.value}))} placeholder={lang==="ru"?"Шампунь Kerastase":"Šampūnas"}/></div>
                         <div className="field"><label>{lang==="ru"?"Цена":"Kaina"}</label>
                           <input value={productForm.price} onChange={e=>setProductForm(f=>({...f,price:e.target.value}))} placeholder="29.99" type="number"/></div>
                       </div>
@@ -4927,6 +4943,16 @@ export default function App() {
                         <textarea value={productForm.description} onChange={e=>setProductForm(f=>({...f,description:e.target.value}))}
                           placeholder={lang==="ru"?"Для кого подходит, как использовать...":"Kam tinka, kaip naudoti..."}
                           style={{minHeight:70}}/></div>
+
+                      {/* In stock toggle */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid var(--border)",marginBottom:12}}>
+                        <span style={{fontSize:13,fontWeight:700}}>{lang==="ru"?"В наличии":"Sandėlyje"}</span>
+                        <button onClick={()=>setProductForm(f=>({...f,inStock:!f.inStock}))}
+                          style={{width:50,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",background:productForm.inStock?"var(--gr)":"var(--border)",transition:"background .2s"}}>
+                          <div style={{position:"absolute",top:3,left:productForm.inStock?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+                        </button>
+                      </div>
+
                       <div className="field"><label>{lang==="ru"?"Фото продукта":"Produkto nuotrauka"}</label>
                         <input type="file" accept="image/*" onChange={e=>{
                           const file=e.target.files?.[0]; if(!file) return;
@@ -4943,48 +4969,76 @@ export default function App() {
                         }}/>
                         {productForm.photo&&<img src={productForm.photo} alt="" style={{width:100,height:100,objectFit:"cover",borderRadius:8,marginTop:6}}/>}
                       </div>
-                      <button className="btn b-lg b-full"
-                        style={{background:productForm.name?`var(--gold)`:"var(--border)",color:"var(--bg)",fontWeight:800}}
-                        disabled={!productForm.name||productSaving}
-                        onClick={async()=>{
-                          if(!productForm.name) return;
-                          setProductSaving(true);
-                          try{
-                            await addDoc(collection(fbDb,"products"),{
-                              ...productForm,
-                              price:parseFloat(productForm.price)||0,
-                              createdAt:new Date().toISOString(),
-                            });
-                            setProductForm({name:"",description:"",price:"",photo:"",category:""});
-                          }catch(e){ alert(lang==="ru"?"Ошибка":"Klaida"); }
-                          setProductSaving(false);
-                        }}>
-                        {productSaving?"...":(lang==="ru"?"Сохранить продукт":"Išsaugoti produktą")}
-                      </button>
+
+                      <div style={{display:"flex",gap:8}}>
+                        <button className="btn b-lg" style={{flex:1,background:productForm.name?"var(--gold)":"var(--border)",color:"var(--bg)",fontWeight:800}}
+                          disabled={!productForm.name||productSaving}
+                          onClick={async()=>{
+                            if(!productForm.name) return;
+                            setProductSaving(true);
+                            try{
+                              const data={...productForm,price:parseFloat(productForm.price)||0,createdAt:editingProduct?.createdAt||new Date().toISOString()};
+                              if(editingProduct){
+                                await setDoc(doc(fbDb,"products",editingProduct.id),data);
+                                setEditingProduct(null);
+                              } else {
+                                await addDoc(collection(fbDb,"products"),{...data,createdAt:new Date().toISOString()});
+                              }
+                              setProductForm({name:"",description:"",price:"",photo:"",category:"",inStock:true});
+                            }catch(e){ alert(lang==="ru"?"Ошибка":"Klaida"); }
+                            setProductSaving(false);
+                          }}>
+                          {productSaving?"...":(editingProduct?(lang==="ru"?"Сохранить изменения":"Išsaugoti"):(lang==="ru"?"Добавить":"Pridėti"))}
+                        </button>
+                        {editingProduct&&(
+                          <button className="btn b-lg" style={{background:"var(--card2)",color:"var(--mu)"}}
+                            onClick={()=>{setEditingProduct(null);setProductForm({name:"",description:"",price:"",photo:"",category:"",inStock:true});}}>
+                            {lang==="ru"?"Отмена":"Atšaukti"}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Products list */}
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
                       {products.sort((a,b)=>b.createdAt>a.createdAt?1:-1).map(p=>(
-                        <div key={p.id} style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:12,overflow:"hidden"}}>
+                        <div key={p.id} style={{background:"var(--card)",border:`1px solid ${editingProduct?.id===p.id?"var(--or)":"var(--b2)"}`,borderRadius:12,overflow:"hidden"}}>
                           {p.photo&&<img src={p.photo} alt="" style={{width:"100%",height:120,objectFit:"cover"}}/>}
                           {!p.photo&&<div style={{width:"100%",height:80,background:"var(--card2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>🧴</div>}
                           <div style={{padding:"8px 10px"}}>
-                            <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{p.name}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+                              <div style={{fontWeight:700,fontSize:12,flex:1}}>{p.name}</div>
+                              <span style={{fontSize:9,fontWeight:700,color:p.inStock!==false?"var(--gr)":"var(--red)"}}>{p.inStock!==false?"●":"○"}</span>
+                            </div>
                             {p.category&&<div style={{fontSize:10,color:"var(--gold)",marginBottom:4}}>{p.category}</div>}
                             {p.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--gr)"}}>{p.price}€</div>}
-                            {p.description&&<div style={{fontSize:10,color:"var(--mu2)",marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.description}</div>}
-                            <button onClick={async()=>{
-                              try{ await deleteDoc(doc(fbDb,"products",p.id)); }catch(e){}
-                            }} style={{marginTop:6,background:"none",border:"1px solid var(--border)",borderRadius:6,padding:"3px 8px",color:"var(--mu)",fontSize:10,cursor:"pointer",width:"100%"}}>
-                              🗑 {lang==="ru"?"Удалить":"Ištrinti"}
-                            </button>
+                            <div style={{display:"flex",gap:4,marginTop:6}}>
+                              <button onClick={()=>{
+                                setEditingProduct(p);
+                                setProductForm({name:p.name||"",description:p.description||"",price:p.price||"",photo:p.photo||"",category:p.category||"",inStock:p.inStock!==false});
+                                window.scrollTo(0,0);
+                              }} style={{flex:1,background:"var(--card2)",border:"1px solid var(--border)",borderRadius:6,padding:"3px 0",color:"var(--or)",fontSize:11,cursor:"pointer",fontWeight:700}}>
+                                ✏️
+                              </button>
+                              <button onClick={async()=>{
+                                // Toggle stock
+                                const updated={...p,inStock:p.inStock===false?true:false};
+                                try{ await setDoc(doc(fbDb,"products",p.id),updated); }catch(e){}
+                              }} style={{flex:1,background:p.inStock!==false?"rgba(31,186,122,.15)":"rgba(255,50,50,.15)",border:`1px solid ${p.inStock!==false?"var(--gr)":"var(--red)"}`,borderRadius:6,padding:"3px 0",color:p.inStock!==false?"var(--gr)":"var(--red)",fontSize:10,cursor:"pointer",fontWeight:700}}>
+                                {p.inStock!==false?"✓":"✗"}
+                              </button>
+                              <button onClick={async()=>{
+                                try{ await deleteDoc(doc(fbDb,"products",p.id)); }catch(e){}
+                              }} style={{flex:1,background:"none",border:"1px solid var(--border)",borderRadius:6,padding:"3px 0",color:"var(--mu)",fontSize:11,cursor:"pointer"}}>
+                                🗑
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                     {products.length===0&&<div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:24}}>
-                      {lang==="ru"?"Продуктов пока нет. Добавьте первый!":"Produktų dar nėra."}
+                      {lang==="ru"?"Продуктов пока нет":"Produktų dar nėra"}
                     </div>}
                   </div>
                 )}
