@@ -1828,7 +1828,8 @@ export default function App() {
   const [profileEdit, setProfileEdit] = useState({name:"", phone:""});
   const [profileSaved, setProfileSaved] = useState(false);
   const [clientReschedule, setClientReschedule] = useState(null);
-  const [selectedMaster, setSelectedMaster] = useState(null); // for master profile page
+  const [selectedMaster, setSelectedMaster] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null); // for master profile page
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
@@ -2110,6 +2111,17 @@ export default function App() {
   const [blockTypeModal, setBlockTypeModal] = useState(false);
   const [blockToDelete, setBlockToDelete] = useState(null);
   const [portfolio, setPortfolio] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [productForm, setProductForm] = useState({name:"",description:"",price:"",photo:"",category:""});
+  const [productSaving, setProductSaving] = useState(false);
+
+  // Load products from Firestore
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"products"), snap=>{
+      setProducts(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
   const [portfolioForm, setPortfolioForm] = useState({photo:"", serviceId:"", caption:""});
   const [portfolioUploading, setPortfolioUploading] = useState(false);
 
@@ -3015,6 +3027,39 @@ export default function App() {
           </>}
           <div className="divider"/>
 
+          {/* PRODUCTS SECTION */}
+          {products.length>0&&(
+            <>
+              <section className="sec" id="shop">
+                <div className="stag" style={{color:"var(--gr)"}}>🛍️ {lang==="ru"?"Наша продукция":"Mūsų produkcija"}</div>
+                <h2 className="stitle">{lang==="ru"?"ПРОДУКТЫ":"PRODUKTAI"}</h2>
+
+                {/* Carousel */}
+                <div style={{display:"flex",gap:12,overflowX:"auto",scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",paddingBottom:8,scrollbarWidth:"none"}}>
+                  {products.map(p=>(
+                    <div key={p.id} style={{flexShrink:0,width:180,scrollSnapAlign:"start",background:"var(--card)",border:"1px solid var(--b2)",borderRadius:14,overflow:"hidden",cursor:"pointer"}}
+                      onClick={()=>setSelectedProduct(p)}>
+                      {p.photo
+                        ?<img src={p.photo} alt={p.name} style={{width:"100%",height:160,objectFit:"cover"}}/>
+                        :<div style={{height:120,background:"var(--card2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>🧴</div>
+                      }
+                      <div style={{padding:"10px 12px"}}>
+                        {p.category&&<div style={{fontSize:10,color:"var(--gr)",fontWeight:700,marginBottom:3}}>{p.category}</div>}
+                        <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{p.name}</div>
+                        {p.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--gr)"}}>{p.price}€</div>}
+                        <button className="btn b-sm" style={{marginTop:6,width:"100%",background:"var(--gr)",color:"#fff",fontWeight:700}}
+                          onClick={e=>{e.stopPropagation();setSelectedProduct(p);}}>
+                          {lang==="ru"?"Подробнее":"Plačiau"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <div className="divider"/>
+            </>
+          )}
+
           {/* REVIEWS SECTION */}
           <section className="sec" id="reviews">
             <div className="stag g">⭐ {t.reviews_tag}</div>
@@ -3471,6 +3516,32 @@ export default function App() {
         {/* CLIENT PROFILE PAGE */}
 
         {/* MASTER PROFILE PAGE */}
+        {/* PRODUCT DETAIL MODAL */}
+        {selectedProduct&&(
+          <div style={{position:"fixed",inset:0,background:"var(--bg)",zIndex:300,overflowY:"auto"}}>
+            <div style={{maxWidth:500,margin:"0 auto",padding:16}}>
+              <button onClick={()=>setSelectedProduct(null)} style={{background:"none",border:"none",color:"var(--gr)",cursor:"pointer",fontSize:14,fontWeight:700,marginBottom:16,padding:"8px 0",display:"flex",alignItems:"center",gap:6}}>
+                ← {lang==="ru"?"Назад":"Atgal"}
+              </button>
+              {selectedProduct.photo&&(
+                <img src={selectedProduct.photo} alt={selectedProduct.name} style={{width:"100%",maxHeight:300,objectFit:"cover",borderRadius:14,marginBottom:16}}/>
+              )}
+              <div style={{background:"var(--card)",borderRadius:14,padding:20,border:"1px solid var(--b2)"}}>
+                {selectedProduct.category&&<div style={{fontSize:11,color:"var(--gr)",fontWeight:700,marginBottom:6}}>{selectedProduct.category}</div>}
+                <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1,marginBottom:8}}>{selectedProduct.name}</h2>
+                {selectedProduct.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:"var(--gr)",marginBottom:12}}>{selectedProduct.price}€</div>}
+                {selectedProduct.description&&(
+                  <p style={{fontSize:14,color:"var(--mu2)",lineHeight:1.7,marginBottom:16}}>{selectedProduct.description}</p>
+                )}
+                <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800}}
+                  onClick={()=>{setSelectedProduct(null);goBook();}}>
+                  {lang==="ru"?"Записаться на процедуру":"Registruotis į procedūrą"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {selectedMaster&&(
           <div style={{position:"fixed",inset:0,background:"var(--bg)",zIndex:300,overflowY:"auto"}}>
             <div style={{maxWidth:600,margin:"0 auto",padding:"16px"}}>
@@ -4608,6 +4679,7 @@ export default function App() {
                 {key:"ownercal", icon:"📅", label:lang==="ru"?"Календарь":"Kalendorius"},
                 {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
                 {key:"siteinfo",  icon:"🌐", label:lang==="ru"?"Сайт":"Svetainė"},
+                {key:"products", icon:"🛍️", label:lang==="ru"?"Продукция":"Produkcija"},
                 {key:"courses",  icon:"🎓", label:lang==="ru"?"Обучение":"Mokymai"},
               ].map(item=>(
                 <button key={item.key}
@@ -4817,6 +4889,98 @@ export default function App() {
                         })}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* PRODUCTS TAB */}
+                {ownerTab==="products"&&(
+                  <div>
+                    <div className="stag" style={{color:"var(--gold)"}}>🛍️ {lang==="ru"?"Продукция":"Produkcija"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1,marginBottom:16}}>
+                      {lang==="ru"?"НАШИ ПРОДУКТЫ":"MŪSŲ PRODUKTAI"}
+                    </h2>
+
+                    {/* Add product form */}
+                    <div style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:14,padding:18,marginBottom:20}}>
+                      <div style={{fontWeight:700,fontSize:13,marginBottom:14,color:"var(--gold)"}}>
+                        + {lang==="ru"?"Добавить продукт":"Pridėti produktą"}
+                      </div>
+                      <div className="g2">
+                        <div className="field"><label>{lang==="ru"?"Название":"Pavadinimas"}</label>
+                          <input value={productForm.name} onChange={e=>setProductForm(f=>({...f,name:e.target.value}))} placeholder={lang==="ru"?"Шампунь Kerastase":"Šampūnas Kerastase"}/></div>
+                        <div className="field"><label>{lang==="ru"?"Цена":"Kaina"}</label>
+                          <input value={productForm.price} onChange={e=>setProductForm(f=>({...f,price:e.target.value}))} placeholder="29.99" type="number"/></div>
+                      </div>
+                      <div className="field"><label>{lang==="ru"?"Категория":"Kategorija"}</label>
+                        <select value={productForm.category} onChange={e=>setProductForm(f=>({...f,category:e.target.value}))}>
+                          <option value="">—</option>
+                          {["Шампунь","Кондиционер","Маска","Масло","Стайлинг","Уход за бородой","Другое"].map(c=>(
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select></div>
+                      <div className="field"><label>{lang==="ru"?"Описание":"Aprašymas"}</label>
+                        <textarea value={productForm.description} onChange={e=>setProductForm(f=>({...f,description:e.target.value}))}
+                          placeholder={lang==="ru"?"Для кого подходит, как использовать...":"Kam tinka, kaip naudoti..."}
+                          style={{minHeight:70}}/></div>
+                      <div className="field"><label>{lang==="ru"?"Фото продукта":"Produkto nuotrauka"}</label>
+                        <input type="file" accept="image/*" onChange={e=>{
+                          const file=e.target.files?.[0]; if(!file) return;
+                          const img=new Image(); const url=URL.createObjectURL(file);
+                          img.onload=()=>{
+                            const canvas=document.createElement("canvas");
+                            const MAX=600; let w=img.width,h=img.height;
+                            if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+                            canvas.width=w;canvas.height=h;
+                            canvas.getContext("2d").drawImage(img,0,0,w,h);
+                            setProductForm(f=>({...f,photo:canvas.toDataURL("image/jpeg",0.75)}));
+                            URL.revokeObjectURL(url);
+                          };img.src=url;
+                        }}/>
+                        {productForm.photo&&<img src={productForm.photo} alt="" style={{width:100,height:100,objectFit:"cover",borderRadius:8,marginTop:6}}/>}
+                      </div>
+                      <button className="btn b-lg b-full"
+                        style={{background:productForm.name?`var(--gold)`:"var(--border)",color:"var(--bg)",fontWeight:800}}
+                        disabled={!productForm.name||productSaving}
+                        onClick={async()=>{
+                          if(!productForm.name) return;
+                          setProductSaving(true);
+                          try{
+                            await addDoc(collection(fbDb,"products"),{
+                              ...productForm,
+                              price:parseFloat(productForm.price)||0,
+                              createdAt:new Date().toISOString(),
+                            });
+                            setProductForm({name:"",description:"",price:"",photo:"",category:""});
+                          }catch(e){ alert(lang==="ru"?"Ошибка":"Klaida"); }
+                          setProductSaving(false);
+                        }}>
+                        {productSaving?"...":(lang==="ru"?"Сохранить продукт":"Išsaugoti produktą")}
+                      </button>
+                    </div>
+
+                    {/* Products list */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
+                      {products.sort((a,b)=>b.createdAt>a.createdAt?1:-1).map(p=>(
+                        <div key={p.id} style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:12,overflow:"hidden"}}>
+                          {p.photo&&<img src={p.photo} alt="" style={{width:"100%",height:120,objectFit:"cover"}}/>}
+                          {!p.photo&&<div style={{width:"100%",height:80,background:"var(--card2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>🧴</div>}
+                          <div style={{padding:"8px 10px"}}>
+                            <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{p.name}</div>
+                            {p.category&&<div style={{fontSize:10,color:"var(--gold)",marginBottom:4}}>{p.category}</div>}
+                            {p.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--gr)"}}>{p.price}€</div>}
+                            {p.description&&<div style={{fontSize:10,color:"var(--mu2)",marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.description}</div>}
+                            <button onClick={async()=>{
+                              try{ await deleteDoc(doc(fbDb,"products",p.id)); }catch(e){}
+                            }} style={{marginTop:6,background:"none",border:"1px solid var(--border)",borderRadius:6,padding:"3px 8px",color:"var(--mu)",fontSize:10,cursor:"pointer",width:"100%"}}>
+                              🗑 {lang==="ru"?"Удалить":"Ištrinti"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {products.length===0&&<div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:24}}>
+                      {lang==="ru"?"Продуктов пока нет. Добавьте первый!":"Produktų dar nėra."}
+                    </div>}
                   </div>
                 )}
 
