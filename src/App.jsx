@@ -3533,10 +3533,15 @@ export default function App() {
                 {selectedProduct.description&&(
                   <p style={{fontSize:14,color:"var(--mu2)",lineHeight:1.7,marginBottom:16}}>{selectedProduct.description}</p>
                 )}
-                <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800}}
-                  onClick={()=>{setSelectedProduct(null);goBook();}}>
-                  {lang==="ru"?"Записаться на процедуру":"Registruotis į procedūrą"}
-                </button>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  <div style={{padding:"12px 16px",background:"var(--card2)",borderRadius:10,fontSize:13,color:"var(--mu2)",textAlign:"center"}}>
+                    {lang==="ru"?"Узнать о наличии у мастера на записи":"Apie prieinamumą paklauskite meistro vizito metu"}
+                  </div>
+                  <button className="btn b-lg b-full" style={{background:"var(--or)",color:"#fff",fontWeight:800}}
+                    onClick={()=>setSelectedProduct(null)}>
+                    ← {lang==="ru"?"Назад к каталогу":"Atgal į katalogą"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
