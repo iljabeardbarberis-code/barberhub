@@ -1430,6 +1430,16 @@ function ServicesManager({ master, onSave, t, lang }) {
               </div>
               <span style={{ fontSize:11, color:mc, fontWeight:800 }}>= {total} {t.min}</span>
             </div>
+            {/* Needs card toggle */}
+            <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"var(--card2)",borderRadius:8,border:`1px solid ${svc.needsCard?"var(--gr)":"var(--b2)"}`}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:svc.needsCard?"var(--gr)":"var(--mu)"}}>📋 {lang==="ru"?"Требует карточку":"Reikia kortelės"}</div>
+                <div style={{fontSize:10,color:"var(--mu2)"}}>{lang==="ru"?"Мастер заполняет карточку после процедуры":"Meistras pildys kortelę po procedūros"}</div>
+              </div>
+              <button onClick={()=>upd(svc.id,"needsCard",!svc.needsCard)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:svc.needsCard?"var(--gr)":"var(--border)",transition:"background .2s",flexShrink:0}}>
+                <div style={{position:"absolute",top:2,left:svc.needsCard?22:2,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+              </button>
+            </div>
           </div>
         );
       })}
@@ -1833,6 +1843,17 @@ export default function App() {
   const [orders, setOrders] = useState([]);
   const [orderModal, setOrderModal] = useState(null); // product being ordered
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [triCards, setTriCards] = useState([]);
+  const [triCardModal, setTriCardModal] = useState(null); // {appt, master}
+  const [triCardForm, setTriCardForm] = useState({procedure:"",recommendations:"",productRecs:[],photos:[]});
+  const [triCardSaving, setTriCardSaving] = useState(false);
+
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"trichologyCards"), snap=>{
+      setTriCards(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(fbDb,"orders"), snap=>{
@@ -6092,8 +6113,130 @@ export default function App() {
       )}
 
       {/* APPOINTMENT DETAIL */}
+      {/* TRICHOLOGY CARD MODAL */}
+      {triCardModal&&(
+        <div style={{position:"fixed",inset:0,background:"var(--bg)",zIndex:400,overflowY:"auto"}}>
+          <div style={{maxWidth:520,margin:"0 auto",padding:16}}>
+            <button onClick={()=>setTriCardModal(null)} style={{background:"none",border:"none",color:mc,cursor:"pointer",fontSize:14,fontWeight:700,marginBottom:16,padding:"8px 0",display:"flex",alignItems:"center",gap:6}}>
+              ← {lang==="ru"?"Назад":"Atgal"}
+            </button>
+            <div style={{background:"var(--card)",border:`1px solid ${mc}44`,borderRadius:14,padding:18,marginBottom:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1,marginBottom:4}}>📋 {lang==="ru"?"КАРТОЧКА ПРОЦЕДУРЫ":"PROCEDŪROS KORTELĖ"}</div>
+              <div style={{fontSize:12,color:mc,fontWeight:700}}>{triCardModal.svc?.name} · {triCardModal.appt.clientName} · {triCardModal.appt.date}</div>
+            </div>
+
+            {/* 1. Что делали */}
+            <div className="field" style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:700,marginBottom:6,display:"block"}}>✂️ {lang==="ru"?"Что делали (описание процедуры)":"Ką darėme (procedūros aprašymas)"}</label>
+              <textarea value={triCardForm.procedure} onChange={e=>setTriCardForm(f=>({...f,procedure:e.target.value}))}
+                placeholder={lang==="ru"?"Опишите что было сделано в ходе процедуры...":"Aprašykite, kas buvo atlikta procedūros metu..."}
+                style={{minHeight:90,width:"100%"}}/>
+            </div>
+
+            {/* 2. Рекомендации */}
+            <div className="field" style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:700,marginBottom:6,display:"block"}}>💡 {lang==="ru"?"Рекомендации клиенту":"Rekomendacijos klientui"}</label>
+              <textarea value={triCardForm.recommendations} onChange={e=>setTriCardForm(f=>({...f,recommendations:e.target.value}))}
+                placeholder={lang==="ru"?"Что рекомендуете делать дома, как ухаживать...":"Ką rekomenduojate daryti namuose..."}
+                style={{minHeight:90,width:"100%"}}/>
+            </div>
+
+            {/* 3. Рекомендуемые продукты */}
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:700,marginBottom:8,display:"block"}}>🛍️ {lang==="ru"?"Рекомендуемые продукты":"Rekomenduojami produktai"}</label>
+              {products.length===0&&<div style={{fontSize:12,color:"var(--mu2)",marginBottom:8}}>{lang==="ru"?"Продукты не добавлены владельцем":"Produktai nepridėti savininko"}</div>}
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {products.map(p=>{
+                  const selected=triCardForm.productRecs.includes(p.id);
+                  return(
+                    <button key={p.id} onClick={()=>setTriCardForm(f=>({...f,productRecs:selected?f.productRecs.filter(x=>x!==p.id):[...f.productRecs,p.id]}))}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,border:`1px solid ${selected?"var(--gr)":"var(--b2)"}`,background:selected?"var(--gr)11":"var(--card)",cursor:"pointer",textAlign:"left"}}>
+                      {p.photo&&<img src={p.photo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:6}}/>}
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12,fontWeight:700,color:selected?"var(--gr)":"var(--wh)"}}>{p.name}</div>
+                        {p.category&&<div style={{fontSize:10,color:"var(--mu2)"}}>{p.category}</div>}
+                      </div>
+                      <span style={{fontSize:16}}>{selected?"✅":"○"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. Фото с примечаниями */}
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,fontWeight:700,marginBottom:8,display:"block"}}>📸 {lang==="ru"?"Фото (с примечаниями)":"Nuotraukos (su pastabomis)"}</label>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {triCardForm.photos.map((ph,i)=>(
+                  <div key={i} style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:10,padding:10}}>
+                    <img src={ph.url} alt="" style={{width:"100%",maxHeight:160,objectFit:"cover",borderRadius:8,marginBottom:6}}/>
+                    <input value={ph.note||""} onChange={e=>setTriCardForm(f=>({...f,photos:f.photos.map((p2,j)=>j===i?{...p2,note:e.target.value}:p2)}))}
+                      placeholder={lang==="ru"?"Примечание к фото...":"Pastaba prie nuotraukos..."} style={{width:"100%",fontSize:12}}/>
+                    <button onClick={()=>setTriCardForm(f=>({...f,photos:f.photos.filter((_,j)=>j!==i)}))}
+                      style={{marginTop:6,background:"none",border:"1px solid var(--border)",borderRadius:6,padding:"3px 8px",color:"var(--red)",fontSize:11,cursor:"pointer"}}>
+                      🗑 {lang==="ru"?"Удалить":"Ištrinti"}
+                    </button>
+                  </div>
+                ))}
+                <label style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",border:"1px dashed var(--b2)",borderRadius:10,cursor:"pointer",color:"var(--mu)"}}>
+                  <span>📷 {lang==="ru"?"Добавить фото":"Pridėti nuotrauką"}</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+                    const file=e.target.files?.[0]; if(!file) return;
+                    const img=new Image(); const url=URL.createObjectURL(file);
+                    img.onload=()=>{
+                      const canvas=document.createElement("canvas");
+                      const MAX=800; let w=img.width,h=img.height;
+                      if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+                      canvas.width=w;canvas.height=h;
+                      canvas.getContext("2d").drawImage(img,0,0,w,h);
+                      setTriCardForm(f=>({...f,photos:[...f.photos,{url:canvas.toDataURL("image/jpeg",0.75),note:""}]}));
+                      URL.revokeObjectURL(url);
+                    };img.src=url;
+                  }}/>
+                </label>
+              </div>
+            </div>
+
+            <button className="btn b-lg b-full" style={{background:mc,color:"var(--bg)",fontWeight:800}}
+              disabled={triCardSaving||!triCardForm.procedure}
+              onClick={async()=>{
+                setTriCardSaving(true);
+                try{
+                  const data={
+                    apptId:triCardModal.appt.id,
+                    masterId:String(masterObj.id),
+                    clientEmail:triCardModal.appt.clientEmail||"",
+                    clientName:triCardModal.appt.clientName,
+                    clientUid:triCardModal.appt.clientUid||"",
+                    serviceId:triCardModal.appt.serviceId||"",
+                    serviceName:triCardModal.svc?.name||"",
+                    date:triCardModal.appt.date,
+                    procedure:triCardForm.procedure,
+                    recommendations:triCardForm.recommendations,
+                    productRecs:triCardForm.productRecs,
+                    photos:triCardForm.photos,
+                    createdAt:triCardModal.existing?.createdAt||new Date().toISOString(),
+                    updatedAt:new Date().toISOString(),
+                  };
+                  if(triCardModal.existing){
+                    await setDoc(doc(fbDb,"trichologyCards",triCardModal.existing.id),data);
+                  } else {
+                    await addDoc(collection(fbDb,"trichologyCards"),data);
+                  }
+                  setTriCardModal(null);
+                }catch(e){ alert(lang==="ru"?"Ошибка":"Klaida"); }
+                setTriCardSaving(false);
+              }}>
+              {triCardSaving?"...":(lang==="ru"?"Сохранить карточку":"Išsaugoti kortelę")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {modal==="detail"&&detailAppt&&masterObj&&(()=>{
         const svc=resolveBooking(detailAppt);
+        const needsCard=svc?.needsCard===true;
+        const existingCard=triCards.find(c=>c.apptId===detailAppt.id);
         return(
           <div className="overlay" onClick={()=>setModal(null)}>
             <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -6115,6 +6258,32 @@ export default function App() {
                 <div key={l} className="adrow"><span className="ad-lbl">{l}</span><span className="ad-val">{v}</span></div>
               ))}
               {detailAppt.notes&&<div className="adrow"><span className="ad-lbl">{t.appt_notes}</span><span className="ad-val" style={{color:"var(--mu2)"}}>{detailAppt.notes}</span></div>}
+
+              {/* Trichology card button */}
+              {needsCard&&(
+                <div style={{marginTop:12,marginBottom:4}}>
+                  <button className="btn b-full" style={{
+                    background:existingCard?"var(--gr)22":"var(--card2)",
+                    border:`1px solid ${existingCard?"var(--gr)":"var(--b2)"}`,
+                    color:existingCard?"var(--gr)":"var(--wh)",fontWeight:700,fontSize:13
+                  }} onClick={()=>{
+                    setTriCardForm(existingCard?{
+                      procedure:existingCard.procedure||"",
+                      recommendations:existingCard.recommendations||"",
+                      productRecs:existingCard.productRecs||[],
+                      photos:existingCard.photos||[],
+                    }:{procedure:"",recommendations:"",productRecs:[],photos:[]});
+                    setTriCardModal({appt:detailAppt,svc,existing:existingCard||null});
+                    setModal(null);
+                  }}>
+                    📋 {existingCard
+                      ?(lang==="ru"?"Карточка заполнена — редактировать":"Kortelė užpildyta — redaguoti")
+                      :(lang==="ru"?"+ Добавить карточку процедуры":"+ Pridėti procedūros kortelę")
+                    }
+                  </button>
+                </div>
+              )}
+
               <div className="sad">
                 {detailAppt.status!=="done"&&<button className="btn b-gr" style={{flex:1}} onClick={()=>updateStatus(detailAppt.id,"done")}>{t.mark_done}</button>}
                 <button className="btn b-card" onClick={()=>{setRescheduleAppt(detailAppt);setRescheduleDate(detailAppt.date);setRescheduleTime(null);setModal("reschedule");}}>
