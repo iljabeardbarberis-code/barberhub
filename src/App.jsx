@@ -2232,11 +2232,11 @@ export default function App() {
   };
 
   const resolveSvc = (masterId, serviceId) => {
-    const m = masters.find(x=>x.id===masterId);
+    const m = masters.find(x=>x.id===masterId||String(x.id)===String(masterId));
     const ms = (m?.services||[]).find(s=>s.id===serviceId||s.id===String(serviceId));
-    if (ms) return { name:lang==="ru"?ms.name_ru:ms.name_lt, price:Number(ms.price), mins:Number(ms.mins), cleanup:Number(ms.cleanup||0) };
+    if (ms) return { name:lang==="ru"?ms.name_ru:ms.name_lt, price:Number(ms.price), mins:Number(ms.mins), cleanup:Number(ms.cleanup||0), needsCard:ms.needsCard===true };
     const gs = SERVICES_RU.find(s=>s.id===serviceId||s.id===Number(serviceId));
-    if (gs) return { name:gs.name, price:gs.price, mins:gs.mins, cleanup:0 };
+    if (gs) return { name:gs.name, price:gs.price, mins:gs.mins, cleanup:0, needsCard:false };
     return null;
   };
 
@@ -2249,6 +2249,7 @@ export default function App() {
       price: svcs.reduce((s,x)=>s+x.price,0),
       mins:  svcs.reduce((s,x)=>s+x.mins,0),
       cleanup: svcs.reduce((s,x)=>s+(x.cleanup||0),0),
+      needsCard: svcs.some(s=>s.needsCard===true),
       svcs,
     };
   };
