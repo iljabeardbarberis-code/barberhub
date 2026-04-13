@@ -1829,7 +1829,17 @@ export default function App() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [clientReschedule, setClientReschedule] = useState(null);
   const [selectedMaster, setSelectedMaster] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState(null); // for master profile page
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [orderModal, setOrderModal] = useState(null); // product being ordered
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(fbDb,"orders"), snap=>{
+      setOrders(snap.docs.map(d=>({...d.data(),id:d.id})));
+    }, ()=>{});
+    return ()=>unsub();
+  },[]); // for master profile page
   const [bookings, setBookings] = useState([]);
 
   // ── Load ALL data from Firestore after state is ready ─────────────────
@@ -3517,6 +3527,94 @@ export default function App() {
         {/* CLIENT PROFILE PAGE */}
 
         {/* MASTER PROFILE PAGE */}
+        {/* ORDER MODAL */}
+        {orderModal&&(
+          <div className="overlay" onClick={()=>setOrderModal(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:360}}>
+              {orderPlaced ? (
+                <div style={{textAlign:"center",padding:"20px 0"}}>
+                  <div style={{fontSize:48,marginBottom:12}}>✅</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,marginBottom:8}}>
+                    {lang==="ru"?"ЗАКАЗ ПРИНЯТ!":"UŽSAKYMAS PRIIMTAS!"}
+                  </div>
+                  <div style={{fontSize:13,color:"var(--mu2)",marginBottom:20,lineHeight:1.6}}>
+                    {lang==="ru"
+                      ?"Мы свяжемся с вами для подтверждения. Оплата наличными при получении в салоне."
+                      :"Susisieksime su jumis patvirtinimui. Apmokėjimas grynaisiais atsiimant salone."}
+                  </div>
+                  <button className="btn b-or b-full" onClick={()=>{setOrderModal(null);setOrderPlaced(false);}}>
+                    {lang==="ru"?"Закрыть":"Uždaryti"}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="m-title">{lang==="ru"?"Оформить заказ":"Užsakyti"}</div>
+                  <div style={{background:"var(--card2)",borderRadius:10,padding:"12px 14px",marginBottom:16,display:"flex",gap:12,alignItems:"center"}}>
+                    {orderModal.photo&&<img src={orderModal.photo} alt="" style={{width:56,height:56,objectFit:"cover",borderRadius:8}}/>}
+                    <div>
+                      <div style={{fontWeight:700,fontSize:14}}>{orderModal.name}</div>
+                      {orderModal.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--gr)"}}>{orderModal.price}€</div>}
+                    </div>
+                  </div>
+                  {!cur && (
+                    <div style={{padding:"10px 14px",background:"rgba(232,101,10,.1)",borderRadius:10,fontSize:12,color:"var(--or)",marginBottom:12}}>
+                      ⚠️ {lang==="ru"?"Войдите в аккаунт чтобы оформить заказ":"Prisijunkite norėdami užsakyti"}
+                    </div>
+                  )}
+                  <div style={{background:"var(--card2)",borderRadius:10,padding:"12px 14px",marginBottom:16,fontSize:13}}>
+                    <div style={{fontWeight:700,marginBottom:6}}>💳 {lang==="ru"?"Способ оплаты":"Mokėjimo būdas"}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,color:"var(--gr)"}}>
+                      <span style={{fontSize:18}}>💵</span>
+                      <span style={{fontWeight:700}}>{lang==="ru"?"Наличными в салоне":"Grynaisiais salone"}</span>
+                    </div>
+                  </div>
+                  <div style={{background:"var(--card2)",borderRadius:10,padding:"12px 14px",marginBottom:16,fontSize:12,color:"var(--mu2)",display:"flex",gap:8}}>
+                    <span>📍</span>
+                    <span>{lang==="ru"?"Забрать в салоне BARBER HUB, Klaipėda":"Atsiimti salone BARBER HUB, Klaipėda"}</span>
+                  </div>
+                  <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800,marginBottom:8}}
+                    disabled={!cur}
+                    onClick={async()=>{
+                      if(!cur) return;
+                      try{
+                        await addDoc(collection(fbDb,"orders"),{
+                          productId:orderModal.id,
+                          productName:orderModal.name,
+                          productPhoto:orderModal.photo||"",
+                          price:orderModal.price||0,
+                          clientName:cur.name||"",
+                          clientEmail:cur.email||"",
+                          clientPhone:cur.phone||"",
+                          clientUid:cur.uid||"",
+                          payment:"cash",
+                          pickup:"salon",
+                          status:"pending",
+                          createdAt:new Date().toISOString(),
+                        });
+                        setOrderPlaced(true);
+                        // Telegram notification to owner
+                        const token="8633790548:AAEN_fmoagZvNkAPflv2CrRLjS4dMuSbRIk";
+                        const chatId="1299718955";
+                        fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+                          method:"POST",headers:{"Content-Type":"application/json"},
+                          body:JSON.stringify({chat_id:chatId,parse_mode:"Markdown",
+                            text:`🛒 *Новый заказ!*\n📦 ${orderModal.name}\n💰 ${orderModal.price}€\n👤 ${cur.name}\n📞 ${cur.phone||"—"}\n💵 Наличными в салоне`
+                          })
+                        }).catch(()=>{});
+                      }catch(e){ alert("Ошибка"); }
+                    }}>
+                    ✓ {lang==="ru"?"Подтвердить заказ":"Patvirtinti užsakymą"}
+                  </button>
+                  <button className="btn b-full" style={{background:"none",color:"var(--mu)",border:"1px solid var(--border)"}}
+                    onClick={()=>setOrderModal(null)}>
+                    {lang==="ru"?"Отмена":"Atšaukti"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* PRODUCT DETAIL MODAL */}
         {selectedProduct&&(
           <div style={{position:"fixed",inset:0,background:"var(--bg)",zIndex:300,overflowY:"auto"}}>
@@ -3545,14 +3643,18 @@ export default function App() {
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {selectedProduct.inStock!==false
-                    ? <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800}}
-                        onClick={()=>{setSelectedProduct(null);goBook();}}>
-                        🛒 {lang==="ru"?"Купить на визите":"Įsigyti vizito metu"}
+                    ? <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800,fontSize:16}}
+                        onClick={()=>{setOrderModal(selectedProduct);setSelectedProduct(null);}}>
+                        🛒 {lang==="ru"?"Купить":"Pirkti"}
                       </button>
                     : <div style={{padding:"12px 16px",background:"var(--card2)",borderRadius:10,fontSize:13,color:"var(--mu2)",textAlign:"center"}}>
-                        {lang==="ru"?"Товар скоро появится в наличии":"Prekė netrukus atsiras"}
+                        {lang==="ru"?"Нет в наличии — скоро появится":"Nėra — netrukus atsiras"}
                       </div>
                   }
+                  <div style={{padding:"10px 14px",background:"var(--card2)",borderRadius:10,fontSize:12,color:"var(--mu2)",display:"flex",gap:8,alignItems:"center"}}>
+                    <span>📍</span>
+                    <span>{lang==="ru"?"Оплата наличными. Забрать в салоне BARBER HUB":"Apmokėjimas grynaisiais. Atsiimti salone BARBER HUB"}</span>
+                  </div>
                   <button className="btn b-lg b-full" style={{background:"var(--card2)",color:"var(--mu)",fontWeight:700}}
                     onClick={()=>setSelectedProduct(null)}>
                     ← {lang==="ru"?"Назад":"Atgal"}
@@ -4701,6 +4803,7 @@ export default function App() {
                 {key:"schedule", icon:"🗓️", label:t.owner_tab_schedule},
                 {key:"siteinfo",  icon:"🌐", label:lang==="ru"?"Сайт":"Svetainė"},
                 {key:"products", icon:"🛍️", label:lang==="ru"?"Продукция":"Produkcija"},
+                {key:"shoporders",icon:"📦", label:lang==="ru"?"Заказы":"Užsakymai", badge:orders.filter(o=>o.status==="pending").length||null},
                 {key:"courses",  icon:"🎓", label:lang==="ru"?"Обучение":"Mokymai"},
               ].map(item=>(
                 <button key={item.key}
@@ -4910,6 +5013,86 @@ export default function App() {
                         })}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* ORDERS TAB */}
+                {ownerTab==="shoporders"&&(
+                  <div>
+                    <div className="stag" style={{color:"var(--gold)"}}>📦 {lang==="ru"?"Заказы":"Užsakymai"}</div>
+                    <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1,marginBottom:16}}>
+                      {lang==="ru"?"ЗАКАЗЫ ПРОДУКТОВ":"PRODUKTŲ UŽSAKYMAI"}
+                    </h2>
+
+                    {orders.length===0&&(
+                      <div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:32}}>
+                        {lang==="ru"?"Заказов пока нет":"Užsakymų dar nėra"}
+                      </div>
+                    )}
+
+                    {/* Pending first, then completed */}
+                    {["pending","confirmed","done","cancelled"].map(status=>{
+                      const statusOrders = orders.filter(o=>o.status===status)
+                        .sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+                      if(!statusOrders.length) return null;
+                      const labels={
+                        pending:lang==="ru"?"🔔 Новые":"🔔 Nauji",
+                        confirmed:lang==="ru"?"✅ Подтверждены":"✅ Patvirtinti",
+                        done:lang==="ru"?"✓ Выданы":"✓ Išduoti",
+                        cancelled:lang==="ru"?"✗ Отменены":"✗ Atšaukti",
+                      };
+                      return(
+                        <div key={status} style={{marginBottom:20}}>
+                          <div style={{fontSize:12,fontWeight:800,color:"var(--mu)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
+                            {labels[status]} ({statusOrders.length})
+                          </div>
+                          {statusOrders.map(order=>(
+                            <div key={order.id} style={{background:"var(--card)",border:`1px solid ${status==="pending"?"var(--or)":"var(--b2)"}`,borderRadius:12,padding:14,marginBottom:8}}>
+                              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
+                                {order.productPhoto&&<img src={order.productPhoto} alt="" style={{width:48,height:48,objectFit:"cover",borderRadius:8}}/>}
+                                <div style={{flex:1}}>
+                                  <div style={{fontWeight:700,fontSize:14}}>{order.productName}</div>
+                                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--gr)"}}>{order.price}€</div>
+                                </div>
+                                <div style={{fontSize:10,color:"var(--mu2)",textAlign:"right"}}>
+                                  {new Date(order.createdAt).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+                                </div>
+                              </div>
+                              <div style={{fontSize:12,color:"var(--mu2)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:8}}>
+                                <div>👤 <b>{order.clientName}</b></div>
+                                {order.clientPhone&&<div>📞 {order.clientPhone}</div>}
+                                {order.clientEmail&&<div>📧 {order.clientEmail}</div>}
+                                <div>💵 {lang==="ru"?"Наличными в салоне":"Grynaisiais salone"}</div>
+                              </div>
+                              {status==="pending"&&(
+                                <div style={{display:"flex",gap:6}}>
+                                  <button className="btn b-sm" style={{flex:1,background:"var(--gr)",color:"#fff",fontWeight:700}}
+                                    onClick={async()=>{
+                                      try{ await setDoc(doc(fbDb,"orders",order.id),{...order,status:"confirmed"}); }catch(e){}
+                                    }}>
+                                    ✓ {lang==="ru"?"Подтвердить":"Patvirtinti"}
+                                  </button>
+                                  <button className="btn b-sm b-red" style={{flex:1}}
+                                    onClick={async()=>{
+                                      try{ await setDoc(doc(fbDb,"orders",order.id),{...order,status:"cancelled"}); }catch(e){}
+                                    }}>
+                                    ✗ {lang==="ru"?"Отменить":"Atšaukti"}
+                                  </button>
+                                </div>
+                              )}
+                              {status==="confirmed"&&(
+                                <button className="btn b-sm b-full" style={{background:"var(--gold)",color:"var(--bg)",fontWeight:700}}
+                                  onClick={async()=>{
+                                    try{ await setDoc(doc(fbDb,"orders",order.id),{...order,status:"done"}); }catch(e){}
+                                  }}>
+                                  📦 {lang==="ru"?"Товар выдан":"Prekė išduota"}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
