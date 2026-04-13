@@ -2678,7 +2678,8 @@ export default function App() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [ownerCalWeek, setOwnerCalWeek] = useState(new Date());
   const [ownerCalZoom, setOwnerCalZoom] = useState(32);
-  const [ownerCalFilter, setOwnerCalFilter] = useState(null); // null = all masters
+  const [ownerCalFilter, setOwnerCalFilter] = useState(null);
+  const [ownerSelDay, setOwnerSelDay] = useState(todayStr);
   const [statsMaster, setStatsMaster] = useState(null);
   const [statsPeriod, setStatsPeriod] = useState("month");
   const [statsDay, setStatsDay] = useState(todayStr);
@@ -5236,29 +5237,68 @@ export default function App() {
                 {ownerTab==="ownercal"&&(()=>{
                   const ownerWeekDates = getWeekDates(ownerCalWeek);
                   const timeColW = 48;
-                  const filteredMasters = ownerCalFilter
-                    ? masters.filter(m=>String(m.id)===ownerCalFilter)
-                    : masters;
+                  const isAllMasters = !ownerCalFilter;
+
+                  // ALL MASTERS MODE: pick one day, columns = masters
+                  // SINGLE MASTER MODE: columns = 7 days
+                  const [ownerSelDay, setOwnerSelDay] = [
+                    ownerCalFilter ? null : (ownerWeekDates.find(d=>fmtDate(d)===todayStr) ? todayStr : fmtDate(ownerWeekDates[0])),
+                    () => {}
+                  ];
+
+                  // Use separate state for selected day in all-masters mode
+                  const selDay = isAllMasters ? ownerSelDay : null;
+
+                  const columns = isAllMasters
+                    ? masters.map(m=>({key:String(m.id), label:`${m.emoji} ${m.firstName}`, color:m.color, masterId:String(m.id), date:selDay}))
+                    : ownerWeekDates.map(d=>({key:fmtDate(d), label:d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric"}), color:"var(--or)", date:fmtDate(d), masterId:ownerCalFilter}));
+
+                  const colCount = columns.length;
 
                   return(
                   <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
                     {/* Toolbar */}
                     <div style={{padding:"10px 16px",borderBottom:"1px solid var(--border)",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",background:"var(--dark)",flexShrink:0}}>
-                      <button className="btn b-card b-sm" onClick={()=>setOwnerCalWeek(new Date())}>{t.cal_today}</button>
-                      <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()-7);setOwnerCalWeek(d);}}>‹</button>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,flex:1,textAlign:"center"}}>
-                        {ownerWeekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {ownerWeekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short",year:"numeric"})}
-                      </span>
-                      <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()+7);setOwnerCalWeek(d);}}>›</button>
+                      {isAllMasters ? (
+                        // Day picker for all-masters mode
+                        <>
+                          <button className="btn b-card b-sm" onClick={()=>{setOwnerSelDay(todayStr);setOwnerCalWeek(new Date());}}>{t.cal_today}</button>
+                          <div style={{display:"flex",gap:4,overflowX:"auto",flex:1}}>
+                            {ownerWeekDates.map(d=>{
+                              const ds=fmtDate(d);
+                              const isSelected=ownerSelDay===ds;
+                              return(
+                                <button key={ds} onClick={()=>{setOwnerSelDay(ds);}}
+                                  style={{padding:"4px 10px",borderRadius:8,border:`1px solid ${isSelected?"var(--gold)":"var(--b2)"}`,background:isSelected?"var(--gold)":"var(--card)",color:isSelected?"var(--bg)":"var(--mu2)",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+                                  {d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short",day:"numeric"})}
+                                  {ds===todayStr?" 📍":""}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()-7);setOwnerCalWeek(d);}}>‹ {lang==="ru"?"Нед":"Sav"}</button>
+                          <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()+7);setOwnerCalWeek(d);}}>› {lang==="ru"?"Нед":"Sav"}</button>
+                        </>
+                      ) : (
+                        // Week nav for single master mode
+                        <>
+                          <button className="btn b-card b-sm" onClick={()=>setOwnerCalWeek(new Date())}>{t.cal_today}</button>
+                          <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()-7);setOwnerCalWeek(d);}}>‹</button>
+                          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,flex:1,textAlign:"center"}}>
+                            {ownerWeekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {ownerWeekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})}
+                          </span>
+                          <button className="btn b-card b-sm" onClick={()=>{const d=new Date(ownerCalWeek);d.setDate(d.getDate()+7);setOwnerCalWeek(d);}}>›</button>
+                        </>
+                      )}
                       <button className="btn b-card b-sm" style={{padding:"4px 8px"}} onClick={()=>setOwnerCalZoom(z=>Math.max(12,z-4))}>−</button>
-                      <button className="btn b-card b-sm" style={{padding:"4px 8px"}} onClick={()=>setOwnerCalZoom(z=>Math.min(60,z+4))}>+</button>
+                      <button className="btn b-card b-sm" style={{padding:"4px 8px"}} onClick={()=>setOwnerCalZoom(z=>Math.min(80,z+4))}>+</button>
                     </div>
 
                     {/* Master filter */}
-                    <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",gap:6,overflowX:"auto",flexShrink:0}}>
+                    <div style={{padding:"6px 16px",borderBottom:"1px solid var(--border)",display:"flex",gap:6,overflowX:"auto",flexShrink:0}}>
                       <button onClick={()=>setOwnerCalFilter(null)}
-                        style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${!ownerCalFilter?"var(--gold)":"var(--b2)"}`,background:!ownerCalFilter?"var(--gold)":"var(--card)",color:!ownerCalFilter?"var(--bg)":"var(--mu2)",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
-                        {lang==="ru"?"Все":"Visi"}
+                        style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${isAllMasters?"var(--gold)":"var(--b2)"}`,background:isAllMasters?"var(--gold)":"var(--card)",color:isAllMasters?"var(--bg)":"var(--mu2)",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                        {lang==="ru"?"Все мастера":"Visi meistrai"}
                       </button>
                       {masters.map(m=>(
                         <button key={m.id} onClick={()=>setOwnerCalFilter(String(m.id))}
@@ -5268,24 +5308,23 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* Day headers - sticky */}
-                    <div style={{display:"grid",gridTemplateColumns:`${timeColW}px repeat(7,1fr)`,borderBottom:"2px solid var(--border)",background:"rgba(14,10,6,.98)",flexShrink:0,position:"sticky",top:0,zIndex:10}}>
-                      <div style={{borderBottom:"1px solid var(--border)"}}/>
-                      {ownerWeekDates.map(d=>(
-                        <div key={fmtDate(d)} className={`cal-dhd${fmtDate(d)===todayStr?" td":""}`} style={{background:"rgba(14,10,6,.98)"}}>
-                          <span className="day-name">{d.toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{weekday:"short"})}</span>
-                          <span className="day-num" style={fmtDate(d)===todayStr?{color:"var(--or)"}:{}}>{d.getDate()}</span>
+                    {/* Column headers */}
+                    <div style={{display:"grid",gridTemplateColumns:`${timeColW}px repeat(${colCount},1fr)`,borderBottom:"2px solid var(--border)",background:"rgba(14,10,6,.98)",flexShrink:0}}>
+                      <div/>
+                      {columns.map(col=>(
+                        <div key={col.key} style={{padding:"8px 4px",textAlign:"center",borderLeft:"1px solid rgba(255,255,255,0.89)",background:"rgba(14,10,6,.98)"}}>
+                          <div style={{fontSize:11,fontWeight:800,color:col.color}}>{col.label}</div>
+                          {col.date===todayStr&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--or)",margin:"2px auto 0"}}/>}
                         </div>
                       ))}
                     </div>
 
                     {/* Calendar body */}
                     <div style={{flex:1,overflow:"auto",overscrollBehavior:"contain"}}>
-                      <div style={{display:"grid",gridTemplateColumns:`${timeColW}px repeat(7,1fr)`,minHeight:HOURS.length*ownerCalZoom}}>
-
+                      <div style={{display:"grid",gridTemplateColumns:`${timeColW}px repeat(${colCount},minmax(120px,1fr))`,minHeight:HOURS.length*ownerCalZoom}}>
                         {/* Time column */}
-                        <div style={{width:timeColW,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
-                          {HOURS.map((h,i)=>{
+                        <div style={{width:timeColW,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
+                          {HOURS.map(h=>{
                             const isHour=h.endsWith(":00");
                             const isHalf=h.endsWith(":30");
                             const show=ownerCalZoom>=50?true:ownerCalZoom>=24?(isHour||isHalf):isHour;
@@ -5296,15 +5335,16 @@ export default function App() {
                             );
                           })}
                         </div>
-
-                        {/* Day columns */}
-                        {ownerWeekDates.map(d=>{
-                          const ds=fmtDate(d);
-                          const dayBookings=bookings.filter(b=>b.date===ds&&b.status!=="cancelled"&&(
-                            !ownerCalFilter||String(b.masterId)===ownerCalFilter
-                          ));
+                        {/* Data columns */}
+                        {columns.map(col=>{
+                          const colBookings = bookings.filter(b=>
+                            b.status!=="cancelled" &&
+                            b.date===col.date &&
+                            String(b.masterId)===col.masterId
+                          );
+                          const isToday = col.date===todayStr;
                           return(
-                            <div key={ds} className={ds===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*ownerCalZoom,borderLeft:"1px solid rgba(255,255,255,0.89)"}}>
+                            <div key={col.key} className={isToday?"td-col":""} style={{position:"relative",minHeight:HOURS.length*ownerCalZoom,borderLeft:"1px solid rgba(255,255,255,0.89)"}}>
                               {/* Hour lines */}
                               {HOURS.map((h,hi)=>{
                                 const isHour=h.endsWith(":00");
@@ -5312,36 +5352,31 @@ export default function App() {
                                 if(!isHour&&!isHalf) return null;
                                 return <div key={"l"+h} style={{position:"absolute",top:hi*ownerCalZoom,left:0,right:0,height:0,borderTop:isHour?"1px solid rgba(255,255,255,0.89)":"1px solid rgba(255,255,255,0.25)",zIndex:1,pointerEvents:"none"}}/>;
                               })}
-                              {/* Current time line */}
-                              {ds===todayStr&&(()=>{
+                              {/* Now line */}
+                              {isToday&&(()=>{
                                 const nowMins=new Date().getHours()*60+new Date().getMinutes();
                                 const top=((nowMins-timeToMins(HOURS[0]))/10)*ownerCalZoom;
                                 if(top<0||top>HOURS.length*ownerCalZoom) return null;
                                 return <div className="now-line" style={{top,zIndex:8}}><div className="now-dot"/></div>;
                               })()}
                               {/* Bookings */}
-                              {dayBookings.map(appt=>{
+                              {colBookings.map(appt=>{
                                 const master=masters.find(m=>String(m.id)===String(appt.masterId));
-                                const mc=master?.color||"var(--or)";
+                                const mc=master?.color||col.color||"var(--or)";
                                 const svc=resolveBooking(appt);
                                 const top=slotTop(appt.time,ownerCalZoom);
-                                const h=slotHeight(svc?.mins||30,ownerCalZoom);
+                                const h=Math.max(slotHeight(svc?.mins||30,ownerCalZoom),20);
                                 return(
                                   <div key={appt.id} style={{
-                                    position:"absolute",left:2,right:2,
-                                    top,height:Math.max(h,20),
-                                    background:mc,color:"#fff",
-                                    borderRadius:5,padding:"2px 5px",
-                                    fontSize:9,fontWeight:700,
-                                    overflow:"hidden",zIndex:5,
-                                    cursor:"pointer",
+                                    position:"absolute",left:2,right:2,top,height:h,
+                                    background:mc+"dd",color:"#fff",borderRadius:5,
+                                    padding:"2px 5px",fontSize:10,fontWeight:700,
+                                    overflow:"hidden",zIndex:5,cursor:"pointer",
                                     borderLeft:`3px solid ${mc}`,
-                                    boxShadow:"0 1px 4px rgba(0,0,0,.3)",
-                                  }}
-                                  title={`${appt.clientName} · ${appt.time} · ${master?.firstName||""}`}>
-                                    <div style={{fontSize:8,opacity:0.85,fontWeight:400}}>{master?.emoji} {master?.firstName}</div>
+                                    boxShadow:"0 1px 4px rgba(0,0,0,.4)",
+                                  }}>
                                     <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{appt.clientName}</div>
-                                    {appt.source==="treatwell"&&<div style={{fontSize:7,opacity:0.8}}>TW</div>}
+                                    <div style={{fontSize:8,opacity:0.8}}>{appt.time}{appt.source==="treatwell"?" · TW":""}</div>
                                   </div>
                                 );
                               })}
