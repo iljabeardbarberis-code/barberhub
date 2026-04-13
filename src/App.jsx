@@ -3556,11 +3556,6 @@ export default function App() {
                       {orderModal.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--gr)"}}>{orderModal.price}€</div>}
                     </div>
                   </div>
-                  {!cur && (
-                    <div style={{padding:"10px 14px",background:"rgba(232,101,10,.1)",borderRadius:10,fontSize:12,color:"var(--or)",marginBottom:12}}>
-                      ⚠️ {lang==="ru"?"Войдите в аккаунт чтобы оформить заказ":"Prisijunkite norėdami užsakyti"}
-                    </div>
-                  )}
                   <div style={{background:"var(--card2)",borderRadius:10,padding:"12px 14px",marginBottom:16,fontSize:13}}>
                     <div style={{fontWeight:700,marginBottom:6}}>💳 {lang==="ru"?"Способ оплаты":"Mokėjimo būdas"}</div>
                     <div style={{display:"flex",alignItems:"center",gap:8,color:"var(--gr)"}}>
@@ -3572,39 +3567,43 @@ export default function App() {
                     <span>📍</span>
                     <span>{lang==="ru"?"Забрать в салоне BARBER HUB, Klaipėda":"Atsiimti salone BARBER HUB, Klaipėda"}</span>
                   </div>
-                  <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800,marginBottom:8}}
-                    disabled={!cur}
-                    onClick={async()=>{
-                      if(!cur) return;
-                      try{
-                        await addDoc(collection(fbDb,"orders"),{
-                          productId:orderModal.id,
-                          productName:orderModal.name,
-                          productPhoto:orderModal.photo||"",
-                          price:orderModal.price||0,
-                          clientName:cur.name||"",
-                          clientEmail:cur.email||"",
-                          clientPhone:cur.phone||"",
-                          clientUid:cur.uid||"",
-                          payment:"cash",
-                          pickup:"salon",
-                          status:"pending",
-                          createdAt:new Date().toISOString(),
-                        });
-                        setOrderPlaced(true);
-                        // Telegram notification to owner
-                        const token="8633790548:AAEN_fmoagZvNkAPflv2CrRLjS4dMuSbRIk";
-                        const chatId="1299718955";
-                        fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
-                          method:"POST",headers:{"Content-Type":"application/json"},
-                          body:JSON.stringify({chat_id:chatId,parse_mode:"Markdown",
-                            text:`🛒 *Новый заказ!*\n📦 ${orderModal.name}\n💰 ${orderModal.price}€\n👤 ${cur.name}\n📞 ${cur.phone||"—"}\n💵 Наличными в салоне`
-                          })
-                        }).catch(()=>{});
-                      }catch(e){ alert("Ошибка"); }
-                    }}>
-                    ✓ {lang==="ru"?"Подтвердить заказ":"Patvirtinti užsakymą"}
-                  </button>
+                  {cur ? (
+                    <button className="btn b-lg b-full" style={{background:"var(--gr)",color:"#fff",fontWeight:800,marginBottom:8}}
+                      onClick={async()=>{
+                        try{
+                          await addDoc(collection(fbDb,"orders"),{
+                            productId:orderModal.id,
+                            productName:orderModal.name,
+                            productPhoto:orderModal.photo||"",
+                            price:orderModal.price||0,
+                            clientName:cur.name||"",
+                            clientEmail:cur.email||"",
+                            clientPhone:cur.phone||"",
+                            clientUid:cur.uid||"",
+                            payment:"cash",
+                            pickup:"salon",
+                            status:"pending",
+                            createdAt:new Date().toISOString(),
+                          });
+                          setOrderPlaced(true);
+                          const token="8633790548:AAEN_fmoagZvNkAPflv2CrRLjS4dMuSbRIk";
+                          const chatId="1299718955";
+                          fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+                            method:"POST",headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({chat_id:chatId,parse_mode:"Markdown",
+                              text:`🛒 *Новый заказ!*\n📦 ${orderModal.name}\n💰 ${orderModal.price}€\n👤 ${cur.name}\n📞 ${cur.phone||"—"}\n💵 Наличными в салоне`
+                            })
+                          }).catch(()=>{});
+                        }catch(e){ alert("Ошибка"); }
+                      }}>
+                      ✓ {lang==="ru"?"Подтвердить заказ":"Patvirtinti užsakymą"}
+                    </button>
+                  ) : (
+                    <button className="btn b-lg b-full" style={{background:"var(--or)",color:"#fff",fontWeight:800,marginBottom:8}}
+                      onClick={()=>{setOrderModal(null);setModal("auth");setAuthMode("login");}}>
+                      {lang==="ru"?"Войти чтобы купить":"Prisijungti norėdami pirkti"}
+                    </button>
+                  )}
                   <button className="btn b-full" style={{background:"none",color:"var(--mu)",border:"1px solid var(--border)"}}
                     onClick={()=>setOrderModal(null)}>
                     {lang==="ru"?"Отмена":"Atšaukti"}
