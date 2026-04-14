@@ -3783,6 +3783,101 @@ export default function App() {
           </div>
         )}
 
+        {/* MY PROCEDURES PAGE */}
+        {page==="procedures"&&cur&&!masterObj&&!isOwner&&(
+          <section className="sec" style={{maxWidth:520,margin:"0 auto"}}>
+            <button onClick={()=>setPage("profile")} style={{background:"none",border:"none",color:"var(--gr)",cursor:"pointer",fontSize:14,fontWeight:700,marginBottom:16,padding:"8px 0",display:"flex",alignItems:"center",gap:6}}>
+              ← {lang==="ru"?"Назад":"Atgal"}
+            </button>
+            <div className="stag" style={{color:"var(--gr)"}}>🧬 {lang==="ru"?"Мои процедуры":"Mano procedūros"}</div>
+            <h2 className="stitle" style={{marginBottom:20}}>{lang==="ru"?"МОИ ПРОЦЕДУРЫ":"MANO PROCEDŪROS"}</h2>
+
+            {(()=>{
+              const myCards = triCards
+                .filter(c=>c.clientEmail===cur.email||c.clientUid===cur.uid)
+                .sort((a,b)=>b.date>a.date?1:-1);
+
+              if(myCards.length===0) return(
+                <div style={{color:"var(--mu)",fontSize:13,textAlign:"center",padding:32}}>
+                  {lang==="ru"?"Процедур пока нет":"Procedūrų dar nėra"}
+                </div>
+              );
+
+              return myCards.map(card=>{
+                const recProducts = products.filter(p=>(card.productRecs||[]).includes(p.id));
+                const master = masters.find(m=>String(m.id)===String(card.masterId));
+                return(
+                  <div key={card.id} style={{background:"var(--card)",border:"1px solid var(--b2)",borderRadius:14,overflow:"hidden",marginBottom:16}}>
+                    {/* Header */}
+                    <div style={{background:"linear-gradient(135deg,var(--gr)22,transparent)",padding:"14px 16px",borderBottom:"1px solid var(--b2)"}}>
+                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,color:"var(--gr)"}}>{card.serviceName}</div>
+                      <div style={{fontSize:11,color:"var(--mu2)",marginTop:2,display:"flex",gap:10}}>
+                        <span>📅 {new Date(card.date).toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"long",year:"numeric"})}</span>
+                        {master&&<span>✂️ {master.firstName} {master.lastName}</span>}
+                      </div>
+                    </div>
+
+                    <div style={{padding:16}}>
+                      {/* Что делали */}
+                      {card.procedure&&(
+                        <div style={{marginBottom:14}}>
+                          <div style={{fontSize:11,fontWeight:800,color:"var(--gr)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>✂️ {lang==="ru"?"Что делали":"Ką darėme"}</div>
+                          <div style={{fontSize:13,color:"var(--mu2)",lineHeight:1.7}}>{card.procedure}</div>
+                        </div>
+                      )}
+
+                      {/* Рекомендации */}
+                      {card.recommendations&&(
+                        <div style={{marginBottom:14}}>
+                          <div style={{fontSize:11,fontWeight:800,color:"var(--or)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>💡 {lang==="ru"?"Рекомендации":"Rekomendacijos"}</div>
+                          <div style={{fontSize:13,color:"var(--mu2)",lineHeight:1.7}}>{card.recommendations}</div>
+                        </div>
+                      )}
+
+                      {/* Фото */}
+                      {card.photos?.length>0&&(
+                        <div style={{marginBottom:14}}>
+                          <div style={{fontSize:11,fontWeight:800,color:"var(--mu)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>📸 {lang==="ru"?"Фото":"Nuotraukos"}</div>
+                          <div style={{display:"flex",gap:8,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+                            {card.photos.map((ph,i)=>(
+                              <div key={i} style={{flexShrink:0}}>
+                                <img src={ph.url} alt="" style={{width:140,height:140,objectFit:"cover",borderRadius:10,display:"block"}}/>
+                                {ph.note&&<div style={{fontSize:10,color:"var(--mu2)",marginTop:4,maxWidth:140}}>{ph.note}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Рекомендуемые продукты */}
+                      {recProducts.length>0&&(
+                        <div>
+                          <div style={{fontSize:11,fontWeight:800,color:"var(--gold)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🛍️ {lang==="ru"?"Рекомендуемые продукты":"Rekomenduojami produktai"}</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                            {recProducts.map(p=>(
+                              <div key={p.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 12px",background:"var(--card2)",borderRadius:10,cursor:"pointer"}}
+                                onClick={()=>setSelectedProduct(p)}>
+                                {p.photo&&<img src={p.photo} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:8}}/>}
+                                {!p.photo&&<div style={{width:44,height:44,background:"var(--border)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🧴</div>}
+                                <div style={{flex:1}}>
+                                  <div style={{fontWeight:700,fontSize:13}}>{p.name}</div>
+                                  {p.category&&<div style={{fontSize:10,color:"var(--mu2)"}}>{p.category}</div>}
+                                  {p.price>0&&<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--gr)"}}>{p.price}€</div>}
+                                </div>
+                                <span style={{fontSize:12,color:"var(--mu)"}}>›</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </section>
+        )}
+
         {page==="profile"&&cur&&!masterObj&&!isOwner&&(
           <section className="sec" style={{maxWidth:480,margin:"0 auto"}}>
             <div className="stag">{lang==="ru"?"МОЙ ПРОФИЛЬ":"MANO PROFILIS"}</div>
@@ -3831,6 +3926,12 @@ export default function App() {
             <button className="btn b-card b-full" style={{marginBottom:10}} onClick={()=>setPage("my")}>
               📋 {lang==="ru"?"Мои записи":"Mano įrašai"}
             </button>
+            {/* My procedures link */}
+            {triCards.filter(c=>c.clientEmail===cur.email||c.clientUid===cur.uid).length>0&&(
+              <button className="btn b-card b-full" style={{marginBottom:10,borderColor:"var(--gr)",color:"var(--gr)"}} onClick={()=>setPage("procedures")}>
+                🧬 {lang==="ru"?"Мои процедуры":"Mano procedūros"} ({triCards.filter(c=>c.clientEmail===cur.email||c.clientUid===cur.uid).length})
+              </button>
+            )}
             {/* Sound settings */}
             <div style={{background:"var(--card)",borderRadius:14,border:"1px solid var(--b2)",padding:16,marginBottom:12}}>
               <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>🔊 {lang==="ru"?"Звуки":"Garsai"}</div>
