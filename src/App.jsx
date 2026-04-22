@@ -797,7 +797,7 @@ function getWeekDates(anchor) {
 }
 function timeToMins(t) { const[h,m]=t.split(":").map(Number); return h*60+m; }
 const SLOT_H = 52; // default, overridden by state below
-function slotTop(time, sh=52) { return ((timeToMins(time)-timeToMins("09:00"))/10)*sh; }
+function slotTop(time, sh=52, start="09:00") { return ((timeToMins(time)-timeToMins(start))/10)*sh; }
 function slotHeight(mins, sh=52) { return Math.max((mins/10)*sh, Math.min(sh*2, 20)); }
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
@@ -2206,6 +2206,16 @@ export default function App() {
       } : null))
     : null;
   const weekDates = getWeekDates(weekAnchor);
+
+  // Dynamic hours based on master's work schedule
+  const CAL_HOURS = masterObj
+    ? HOURS.filter(h=>{
+        const m = timeToMins(h);
+        const start = timeToMins(masterObj.workStart||"09:00");
+        const end = timeToMins(masterObj.workEnd||"20:00");
+        return m >= start && m <= end;
+      })
+    : HOURS;
 
   // Уведомления для текущего пользователя
   const myNotifications = notifications.filter(n => {
@@ -4451,10 +4461,11 @@ export default function App() {
                         swipeRef.current={active:false};
                       }}>
                       <div className={`cal-week${weekSlide?" slide-"+weekSlide:""}`}>
-                        <div className="cal-grid" style={{minHeight:HOURS.length*calZoom,gridTemplateColumns:`48px repeat(7,1fr)`,display:"grid"}}>
+                        <div className="cal-grid" style={{minHeight:CAL_HOURS.length*calZoom,gridTemplateColumns:`48px repeat(7,1fr)`,display:"grid"}}>
                           {/* TIME COLUMN */}
                           {(()=>{
                             const TIME_COL = 48; // fixed width always
+                            const calStart = timeToMins(CAL_HOURS[0]||"09:00");
                             return(
                               <div style={{width:TIME_COL,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
                                 {HOURS.map((h,i)=>{
@@ -4494,7 +4505,7 @@ export default function App() {
                             const ds=fmtDate(d);
                             const dayA=myBookings.filter(b=>b.date===ds&&b.status!=="cancelled");
                             return(
-                              <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:HOURS.length*calZoom}}>
+                              <div key={ds} className={fmtDate(d)===todayStr?"td-col":""} style={{position:"relative",minHeight:CAL_HOURS.length*calZoom}}>
                                 {/* Full-height vertical separator on left of each day */}
                                 <div style={{position:"absolute",top:0,bottom:0,left:0,width:1,background:"rgba(255,255,255,0.89)",zIndex:2,pointerEvents:"none"}}/>
                                 {/* Hour/half-hour guide lines across full width */}
@@ -4519,17 +4530,17 @@ export default function App() {
                                 {/* Current time line */}
                                 {fmtDate(d)===todayStr&&(()=>{
                                   const nowMins = nowTime.getHours()*60+nowTime.getMinutes();
-                                  const startMins = timeToMins(HOURS[0]);
+                                  const startMins = timeToMins(CAL_HOURS[0]||HOURS[0]);
                                   const slotH = calZoom; // each slot = 10 min
                                   const top = ((nowMins-startMins)/10)*slotH;
-                                  if(top<0||top>HOURS.length*calZoom) return null;
+                                  if(top<0||top>CAL_HOURS.length*calZoom) return null;
                                   return(
                                     <div className="now-line" style={{top}}>
                                       <div className="now-dot"/>
                                     </div>
                                   );
                                 })()}
-                                {HOURS.map(h=>{
+                                {CAL_HOURS.map(h=>{
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
                                   const isBlockSelected = blockSelectedSlots.some(s=>s.date===ds&&s.time===h);
@@ -4604,7 +4615,7 @@ export default function App() {
                                   return(
                                     <div key={appt.id}
                                       className={`ab${appt.status==="done"?" done":""}${isDragging?" dragging":""}`}
-                                      style={{top:slotTop(appt.time,calZoom),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
+                                      style={{top:slotTop(appt.time,calZoom,CAL_HOURS[0]||"09:00"),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                   onTouchStart={e=>{
                                     e.stopPropagation();
                                     e.preventDefault(); // prevent browser scroll immediately
