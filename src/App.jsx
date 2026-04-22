@@ -1546,16 +1546,23 @@ function MasterSettings({ master, onSave, t, lang }) {
         <div className="settings-section-title">🕐 {t.settings_schedule}</div>
         <div className="settings-grid">
           <div className="sf"><label>{t.s_work_start}</label>
-            <select value={form.workStart} onChange={e=>set("workStart",e.target.value)}>
+            <select value={form.workStart} onChange={e=>{
+              set("workStart",e.target.value);
+              setTimeout(()=>{ onSave({...form,workStart:e.target.value}); },100);
+            }}>
               {HOURS.map(h=><option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div className="sf"><label>{t.s_work_end}</label>
-            <select value={form.workEnd} onChange={e=>set("workEnd",e.target.value)}>
+            <select value={form.workEnd} onChange={e=>{
+              set("workEnd",e.target.value);
+              setTimeout(()=>{ onSave({...form,workEnd:e.target.value}); },100);
+            }}>
               {HOURS.map(h=><option key={h} value={h}>{h}</option>)}
             </select>
           </div>
         </div>
+        <div style={{fontSize:11,color:"var(--gr)",marginTop:6}}>✓ {lang==="ru"?"Сохраняется автоматически":"Išsaugoma automatiškai"}</div>
       </div>
 
       {/* Services manager */}
