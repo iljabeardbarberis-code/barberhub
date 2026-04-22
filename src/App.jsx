@@ -2208,11 +2208,13 @@ export default function App() {
   const weekDates = getWeekDates(weekAnchor);
 
   // Dynamic hours based on master's work schedule
+  const masterWorkStart = masterObj?.workStart||"09:00";
+  const masterWorkEnd = masterObj?.workEnd||"20:00";
   const CAL_HOURS = masterObj
     ? HOURS.filter(h=>{
         const m = timeToMins(h);
-        const start = timeToMins(masterObj.workStart||"09:00");
-        const end = timeToMins(masterObj.workEnd||"20:00");
+        const start = timeToMins(masterWorkStart);
+        const end = timeToMins(masterWorkEnd);
         return m >= start && m <= end;
       })
     : HOURS;
@@ -4465,7 +4467,7 @@ export default function App() {
                           {/* TIME COLUMN */}
                           {(()=>{
                             const TIME_COL = 48; // fixed width always
-                            const calStart = timeToMins(CAL_HOURS[0]||"09:00");
+                            const calStart = timeToMins(masterWorkStart);
                             return(
                               <div style={{width:TIME_COL,flexShrink:0,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
                                 {HOURS.map((h,i)=>{
@@ -4530,7 +4532,7 @@ export default function App() {
                                 {/* Current time line */}
                                 {fmtDate(d)===todayStr&&(()=>{
                                   const nowMins = nowTime.getHours()*60+nowTime.getMinutes();
-                                  const startMins = timeToMins(CAL_HOURS[0]||HOURS[0]);
+                                  const startMins = timeToMins(masterWorkStart);
                                   const slotH = calZoom; // each slot = 10 min
                                   const top = ((nowMins-startMins)/10)*slotH;
                                   if(top<0||top>CAL_HOURS.length*calZoom) return null;
@@ -4544,11 +4546,17 @@ export default function App() {
                                   const cellKey=`${ds}|${h}`;
                                   const isOver=dragOver===cellKey;
                                   const isBlockSelected = blockSelectedSlots.some(s=>s.date===ds&&s.time===h);
+                                  const isWorkHour = (()=>{
+                                    const m=timeToMins(h);
+                                    const s=timeToMins(masterWorkStart);
+                                    const e=timeToMins(masterWorkEnd);
+                                    return m>=s&&m<e;
+                                  })();
                                   const isSlotFree = getSlotStatus(curMasterId,ds,h,[])==="free";
                                   return(
                                     <div key={h}
                                       className={`cal-cell${isOver?" drag-over":""}${blockMode?" block-mode":""}${isBlockSelected?" block-selected":""}${h.endsWith(":00")?" cal-cell-hour":h.endsWith(":30")?" cal-cell-half":""}`}
-                                      style={{height:calZoom}}
+                                      style={{height:calZoom,background:isWorkHour?undefined:"rgba(0,0,0,0.25)"}}
                                       data-cellkey={cellKey}
                                       onClick={()=>{
                                         if(blockMode){
@@ -4615,7 +4623,7 @@ export default function App() {
                                   return(
                                     <div key={appt.id}
                                       className={`ab${appt.status==="done"?" done":""}${isDragging?" dragging":""}`}
-                                      style={{top:slotTop(appt.time,calZoom,CAL_HOURS[0]||"09:00"),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
+                                      style={{top:slotTop(appt.time,calZoom,masterWorkStart),height:slotHeight(svc?.mins||30,calZoom),background:mc,color:"#fff"}}
                                   onTouchStart={e=>{
                                     e.stopPropagation();
                                     e.preventDefault(); // prevent browser scroll immediately
