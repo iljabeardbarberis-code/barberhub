@@ -1166,7 +1166,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
   .mcab{flex-direction:column;height:calc(100vh - 50px);overflow:hidden;}
   .msb{display:none!important;}
   .master-widget-btn{display:flex!important;}
-  .master-block-btn{display:flex!important;align-items:center;justify-content:center;}
+  .master-block-btn{display:none!important;}
   .master-drawer-overlay{display:block!important;}
   .mcon{padding:12px;}
   .cal-hd{padding:8px 10px;gap:6px;flex-wrap:wrap;}
@@ -4108,28 +4108,12 @@ export default function App() {
         {page==="master"&&masterObj&&(()=>{
           return(
             <div className="mcab">
-              {/* MOBILE WIDGET BUTTON */}
-              <button className="master-widget-btn"
-                style={{opacity:widgetBtnVisible?1:0,transform:widgetBtnVisible?"scale(1)":"scale(0.8)",pointerEvents:widgetBtnVisible?"auto":"none",transition:"all .3s"}}
-                onClick={()=>setMasterDrawerOpen(true)}>
-                ☰ {lang==="ru"?"Виджеты":"Valdikliai"}
-              </button>
-
-              {/* Mobile block mode button */}
-              {mTab==="calendar"&&(
-                <button
-                  style={{
-                    display:"none",position:"fixed",bottom:24,right:20,zIndex:200,
-                    width:52,height:52,borderRadius:"50%",border:"none",cursor:"pointer",
-                    background:blockMode?"var(--red)":"var(--gold)",
-                    color:"var(--bg)",fontSize:22,fontWeight:900,
-                    boxShadow:"0 4px 16px rgba(0,0,0,.4)",
-                    opacity:widgetBtnVisible?1:0,transition:"all .3s",
-                    pointerEvents:widgetBtnVisible?"auto":"none",
-                  }}
-                  className="master-block-btn"
-                  onClick={()=>{setBlockMode(p=>!p);setBlockSelectedSlots([]);}}>
-                  {blockMode?"✕":"🔒"}
+              {/* MOBILE WIDGET BUTTON — only show when NOT on calendar */}
+              {mTab!=="calendar"&&(
+                <button className="master-widget-btn"
+                  style={{opacity:widgetBtnVisible?1:0,transform:widgetBtnVisible?"scale(1)":"scale(0.8)",pointerEvents:widgetBtnVisible?"auto":"none",transition:"all .3s"}}
+                  onClick={()=>setMasterDrawerOpen(true)}>
+                  ☰ {lang==="ru"?"Виджеты":"Valdikliai"}
                 </button>
               )}
 
@@ -4335,36 +4319,37 @@ export default function App() {
 
                 {/* CALENDAR */}
                 {mTab==="calendar"&&<>
-                  <div className="cal-hd">
-                    <div className="cal-nav">
+                  <div className="cal-hd" style={{flexDirection:"column",gap:6,padding:"8px 10px"}}>
+                    {/* Row 1: Navigation */}
+                    <div style={{display:"flex",alignItems:"center",gap:6,width:"100%"}}>
+                      <button className="btn b-card b-sm" onClick={()=>setMasterDrawerOpen(true)} style={{padding:"6px 10px",fontSize:16}}>☰</button>
                       <button className="btn b-card b-sm" onClick={()=>setWeekAnchor(new Date())}>{t.cal_today}</button>
                       <button className="btn b-card b-sm" onClick={()=>{
-  setWeekSlide("right");
-  setTimeout(()=>setWeekSlide(null),380);
-  const d=new Date(weekAnchor);d.setDate(d.getDate()-7);setWeekAnchor(d);
-}}>{t.prev_week}</button>
-                      <div className="cal-hd-title">{weekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {weekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short",year:"numeric"})}</div>
+                        setWeekSlide("right");
+                        setTimeout(()=>setWeekSlide(null),380);
+                        const d=new Date(weekAnchor);d.setDate(d.getDate()-7);setWeekAnchor(d);
+                      }}>‹</button>
+                      <div className="cal-hd-title" style={{flex:1,textAlign:"center",fontSize:12}}>
+                        {weekDates[0].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})} – {weekDates[6].toLocaleDateString(lang==="ru"?"ru-RU":"lt-LT",{day:"numeric",month:"short"})}
+                      </div>
                       <button className="btn b-card b-sm" onClick={()=>{
-  setWeekSlide("left");
-  setTimeout(()=>setWeekSlide(null),380);
-  const d=new Date(weekAnchor);d.setDate(d.getDate()+7);setWeekAnchor(d);
-}}>{t.next_week}</button>
+                        setWeekSlide("left");
+                        setTimeout(()=>setWeekSlide(null),380);
+                        const d=new Date(weekAnchor);d.setDate(d.getDate()+7);setWeekAnchor(d);
+                      }}>›</button>
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <div className="cal-tabs">
+                    {/* Row 2: Actions */}
+                    <div style={{display:"flex",alignItems:"center",gap:6,width:"100%"}}>
+                      <div className="cal-tabs" style={{flex:1}}>
                         <button className={`cal-tab${calView==="week"?" on":""}`} onClick={()=>setCalView("week")}>{t.cal_week}</button>
                         <button className={`cal-tab${calView==="list"?" on":""}`} onClick={()=>setCalView("list")}>{t.cal_list}</button>
                       </div>
-                      {/* Zoom controls */}
-                      <div style={{display:"flex",gap:3,marginLeft:6}}>
-                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.max(10,z-4))}>−</button>
-                        <button className="btn b-card b-sm" style={{padding:"4px 10px",fontSize:16,lineHeight:1}} onClick={()=>setCalZoom(z=>Math.min(60,z+4))}>+</button>
-                      </div>
-                      <button className="btn b-sm" style={{background:mc,color:"var(--bg)"}} onClick={()=>openNewAppt(null)}>{t.new_appt}</button>
-                      <button className="btn b-sm"
-                        style={{background:blockMode?"var(--red)":"var(--card2)",color:blockMode?"#fff":"var(--gold)",border:`1px solid ${blockMode?"var(--red)":"var(--gold)"}`}}
+                      <button className="btn b-card b-sm" style={{padding:"4px 8px",fontSize:14}} onClick={()=>setCalZoom(z=>Math.max(10,z-4))}>−</button>
+                      <button className="btn b-card b-sm" style={{padding:"4px 8px",fontSize:14}} onClick={()=>setCalZoom(z=>Math.min(80,z+4))}>+</button>
+                      <button className="btn b-sm" style={{background:mc,color:"var(--bg)",flexShrink:0}} onClick={()=>openNewAppt(null)}>+ {lang==="ru"?"Запись":"Įrašas"}</button>
+                      <button className="btn b-sm" style={{flexShrink:0,background:blockMode?"var(--red)":"var(--card2)",color:blockMode?"#fff":"var(--gold)",border:`1px solid ${blockMode?"var(--red)":"var(--gold)"}`}}
                         onClick={()=>{setBlockMode(p=>!p);setBlockSelectedSlots([]);}}>
-                        {blockMode?"✕":(lang==="ru"?"🔒":"🔒")}
+                        {blockMode?"✕":"🔒"}
                       </button>
                     </div>
                   </div>
