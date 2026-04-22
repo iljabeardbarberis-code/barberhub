@@ -931,7 +931,7 @@ body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-heig
 .s-title{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--or);margin-bottom:8px;letter-spacing:2px;}
 .s-sub{color:var(--mu2);font-size:14px;max-width:320px;line-height:1.65;margin-bottom:24px;}
 /* MASTER CABINET */
-.mcab{display:flex;height:calc(100vh - 53px);overflow:hidden;overscroll-behavior:none;}
+.mcab{display:flex;height:calc(100vh - 53px);overflow:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch;}
 .msb{width:200px;flex-shrink:0;background:var(--dark);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:3px;height:100%;overflow-y:auto;}
 .msp{text-align:center;padding:16px 0 18px;border-bottom:1px solid var(--border);margin-bottom:12px;}
 .msp-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 9px;overflow:hidden;border:3px solid;}
@@ -5833,7 +5833,7 @@ export default function App() {
                     </div>
 
                     {/* Calendar body */}
-                    <div style={{flex:1,overflow:"auto",overscrollBehavior:"contain"}}>
+                    <div style={{flex:1,overflow:"auto",overscrollBehavior:"none"}}>
                       <div style={{display:"grid",gridTemplateColumns:`${timeColW}px repeat(${colCount},minmax(120px,1fr))`,minHeight:HOURS.length*ownerCalZoom}}>
                         {/* Time column */}
                         <div style={{width:timeColW,background:"rgba(14,10,6,.98)",position:"sticky",left:0,zIndex:6,borderRight:"1px solid rgba(255,255,255,0.89)"}}>
