@@ -1458,7 +1458,11 @@ function ServicesManager({ master, onSave, t, lang }) {
 
 // ── MasterSettings ────────────────────────────────────────────────────────────
 function MasterSettings({ master, onSave, t, lang }) {
-  const [form, setForm] = useState({...master});
+  const [form, setForm] = useState({
+    workStart:"09:00",
+    workEnd:"20:00",
+    ...master
+  });
   const [saved, setSaved] = useState(false);
   const fileRef = useRef();
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -2205,11 +2209,9 @@ export default function App() {
         role:"master"
       } : null))
     : null;
+  const masterWorkStart = masterObj?.workStart || "09:00";
+  const masterWorkEnd   = masterObj?.workEnd   || "20:00";
   const weekDates = getWeekDates(weekAnchor);
-
-  // Dynamic hours based on master's work schedule
-  const masterWorkStart = masterObj?.workStart||"09:00";
-  const masterWorkEnd = masterObj?.workEnd||"20:00";
   const CAL_HOURS = masterObj
     ? HOURS.filter(h=>{
         const m = timeToMins(h);
