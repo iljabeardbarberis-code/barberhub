@@ -1547,16 +1547,20 @@ function MasterSettings({ master, onSave, t, lang }) {
         <div className="settings-grid">
           <div className="sf"><label>{t.s_work_start}</label>
             <select value={form.workStart} onChange={e=>{
-              set("workStart",e.target.value);
-              setTimeout(()=>{ onSave({...form,workStart:e.target.value}); },100);
+              const val=e.target.value;
+              const updated={...form,workStart:val};
+              setForm(updated);
+              onSave(updated);
             }}>
               {HOURS.map(h=><option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div className="sf"><label>{t.s_work_end}</label>
             <select value={form.workEnd} onChange={e=>{
-              set("workEnd",e.target.value);
-              setTimeout(()=>{ onSave({...form,workEnd:e.target.value}); },100);
+              const val=e.target.value;
+              const updated={...form,workEnd:val};
+              setForm(updated);
+              onSave(updated);
             }}>
               {HOURS.map(h=><option key={h} value={h}>{h}</option>)}
             </select>
@@ -2126,7 +2130,13 @@ export default function App() {
   // Save salonSchedule to Firestore when it changes
   const saveSalonSchedule = async (newSchedule) => {
     setSalonSchedule(newSchedule);
-    try{ await setDoc(doc(fbDb,"config","salonSchedule"), newSchedule); }catch(e){}
+    try{
+      await setDoc(doc(fbDb,"config","salonSchedule"), newSchedule);
+      console.log("✅ salonSchedule saved:", newSchedule);
+    }catch(e){
+      console.error("❌ salonSchedule save error:", e);
+      alert(lang==="ru"?"Ошибка сохранения расписания: "+e.message:"Klaida: "+e.message);
+    }
   };
 
   // Notifications
@@ -2673,18 +2683,20 @@ export default function App() {
     setMasters(p=>p.map(m=>m.id===masterObj.id?updated:m));
     if(data.firstName) setCur(c=>({...c,name:data.firstName}));
     try{
-      // Use _docId (Firestore document key) if available, otherwise find by email
       if(masterObj._docId){
         await setDoc(doc(fbDb,"masters",masterObj._docId), updated);
+        console.log("✅ saved to _docId:", masterObj._docId, "workStart:", updated.workStart);
       } else {
         const snap = await getDocs(query(collection(fbDb,"masters"), where("email","==",masterObj.email)));
         if(!snap.empty){
           await setDoc(snap.docs[0].ref, updated);
+          console.log("✅ saved by email:", masterObj.email, "workStart:", updated.workStart);
         } else {
           await setDoc(doc(fbDb,"masters",String(masterObj.id)), updated);
+          console.log("✅ saved by id:", masterObj.id, "workStart:", updated.workStart);
         }
       }
-    }catch(e){ console.error("saveMasterProfile error:", e); }
+    }catch(e){ console.error("❌ saveMasterProfile error:", e); }
   };
 
   // Owner: create master
