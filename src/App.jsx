@@ -1649,6 +1649,52 @@ function MasterSettings({ master, onSave, t, lang }) {
               })}
             </div>
           </div>
+
+          {/* Service selector for discount */}
+          {(form.services||[]).filter(s=>s.enabled).length>0&&(
+            <div className="sf" style={{gridColumn:"1 / -1"}}>
+              <label style={{marginBottom:8,display:"block"}}>
+                ✂️ {lang==="ru"?"На какие услуги действует скидка":"Kurioms paslaugoms taikoma nuolaida"}
+              </label>
+              <div style={{fontSize:11,color:"var(--mu2)",marginBottom:8}}>
+                {lang==="ru"?"Не выбрано — скидка на все услуги":"Nepasirinkta — nuolaida visoms paslaugoms"}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {(form.services||[]).filter(s=>s.enabled).map(s=>{
+                  const selected=(form.discount?.serviceIds||[]).includes(s.id);
+                  const orig=Number(s.price);
+                  const discPrice=Math.round(orig*(1-(form.discount?.percent||10)/100));
+                  return(
+                    <button key={s.id}
+                      onClick={()=>{
+                        const cur=(form.discount?.serviceIds||[]);
+                        const next=selected?cur.filter(x=>x!==s.id):[...cur,s.id];
+                        set("discount",{...(form.discount||{}),serviceIds:next});
+                      }}
+                      style={{
+                        display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                        borderRadius:10,border:`1px solid ${selected?mc:"var(--b2)"}`,
+                        background:selected?mc+"18":"var(--card)",cursor:"pointer",textAlign:"left",
+                      }}>
+                      <span style={{fontSize:16}}>{selected?"✅":"○"}</span>
+                      <span style={{flex:1,fontSize:13,fontWeight:selected?700:400,color:selected?mc:"var(--wh)"}}>
+                        {lang==="ru"?s.name_ru:s.name_lt}
+                      </span>
+                      <span style={{fontSize:12,color:"var(--mu2)"}}>
+                        <s>{orig}€</s> → <b style={{color:mc}}>{discPrice}€</b>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {(form.discount?.serviceIds||[]).length>0&&(
+                <button onClick={()=>set("discount",{...(form.discount||{}),serviceIds:[]})}
+                  style={{marginTop:6,background:"none",border:"none",color:"var(--mu)",fontSize:11,cursor:"pointer",padding:0}}>
+                  ✕ {lang==="ru"?"Сбросить выбор (все услуги)":"Atšaukti pasirinkimą"}
+                </button>
+              )}
+            </div>
+          )}
           <div className="sf">
             <label>{t.discount_label_ru}</label>
             <input
