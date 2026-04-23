@@ -1469,7 +1469,11 @@ function MasterSettings({ master, onSave, t, lang }) {
   const mc = form.color;
   const fullName = `${form.firstName} ${form.lastName}`.trim();
 
-  const handleSave = () => { onSave(form); setSaved(true); setTimeout(()=>setSaved(false),2500); };
+  const handleSave = async() => {
+    await onSave(form);
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2500);
+  };
   const handleFile = (e) => {
     const file = e.target.files?.[0]; if(!file) return;
     const r = new FileReader(); r.onload = ev => set("photo", ev.target.result); r.readAsDataURL(file);
@@ -1574,7 +1578,12 @@ function MasterSettings({ master, onSave, t, lang }) {
       </div>
 
       {/* Services manager */}
-      <ServicesManager master={form} onSave={(data)=>setForm(f=>({...f,...data}))} t={t} lang={lang} />
+      <ServicesManager master={form} onSave={async(data)=>{
+        const updated={...form,...data};
+        setForm(updated);
+        // Save immediately to Firestore without waiting for main Save button
+        await onSave(updated);
+      }} t={t} lang={lang} />
 
       {/* DISCOUNT */}
       <div className="settings-section">
