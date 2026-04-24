@@ -814,6 +814,16 @@ const CSS = `
   --gold:#f59e0b;
 }
 body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+/* Splash screen */
+@keyframes splashFade{0%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.05)}}
+@keyframes splashLogo{0%{opacity:0;transform:translateY(20px)}50%{opacity:1;transform:translateY(0)}100%{opacity:1;transform:translateY(0)}}
+@keyframes splashLine{0%{width:0}100%{width:120px}}
+@keyframes splashPulse{0%,100%{opacity:.4}50%{opacity:1}}
+.splash{position:fixed;inset:0;background:#0e0a06;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:splashFade .6s ease forwards;}
+.splash-logo{font-family:"Bebas Neue",sans-serif;font-size:52px;letter-spacing:6px;color:#e8650a;animation:splashLogo .8s ease forwards;text-align:center;line-height:1.1;}
+.splash-sub{font-family:"Syne",sans-serif;font-size:13px;letter-spacing:4px;color:rgba(255,255,255,.5);text-transform:uppercase;animation:splashLogo 1s .2s ease both;}
+.splash-line{height:2px;background:linear-gradient(90deg,transparent,#e8650a,transparent);animation:splashLine 1s .3s ease both;border-radius:2px;}
+.splash-dot{width:6px;height:6px;border-radius:50%;background:#e8650a;animation:splashPulse 1s infinite;}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:15px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(14,10,6,.97);backdrop-filter:blur(16px);gap:10px;}
 .nav-links{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;flex-wrap:wrap;}
 .nav-burger{display:none;background:none;border:none;color:var(--wh);font-size:26px;cursor:pointer;padding:6px 10px;line-height:1;}
@@ -1812,6 +1822,37 @@ function MasterFormModal({ isEdit, initialData, colors, onSave, onCancel, t }) {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(()=>{
+    // Hide splash after 2.8s
+    const timer = setTimeout(()=>setShowSplash(false), 2800);
+    // Voice greeting in Lithuanian (female voice)
+    const speak = () => {
+      if(!window.speechSynthesis) return;
+      const msg = new SpeechSynthesisUtterance("Sveiki atvykę į Barber Hub");
+      msg.lang = "lt-LT";
+      msg.rate = 0.85;
+      msg.pitch = 1.2;
+      msg.volume = 0.9;
+      // Try to get female voice
+      const voices = window.speechSynthesis.getVoices();
+      const female = voices.find(v=>v.lang.startsWith("lt")&&v.name.toLowerCase().includes("female"))
+        || voices.find(v=>v.lang.startsWith("lt"))
+        || voices.find(v=>v.name.toLowerCase().includes("female")&&v.lang.startsWith("en"))
+        || voices[0];
+      if(female) msg.voice = female;
+      setTimeout(()=>window.speechSynthesis.speak(msg), 400);
+    };
+    // Voices load async on some browsers
+    if(window.speechSynthesis?.getVoices().length>0){
+      speak();
+    } else {
+      window.speechSynthesis?.addEventListener("voiceschanged", speak, {once:true});
+    }
+    return ()=>clearTimeout(timer);
+  },[]);
+
   const [lang, setLangRaw] = useState(()=>{
     try{ return localStorage.getItem("barberhub_lang")||"lt"; }catch(e){ return "lt"; }
   });
