@@ -1827,29 +1827,10 @@ export default function App() {
   useEffect(()=>{
     // Hide splash after 2.8s
     const timer = setTimeout(()=>setShowSplash(false), 2800);
-    // Voice greeting in Lithuanian (female voice)
-    const speak = () => {
-      if(!window.speechSynthesis) return;
-      const msg = new SpeechSynthesisUtterance("Sveiki atvykę į Barber Hub");
-      msg.lang = "lt-LT";
-      msg.rate = 0.85;
-      msg.pitch = 1.2;
-      msg.volume = 0.9;
-      // Try to get female voice
-      const voices = window.speechSynthesis.getVoices();
-      const female = voices.find(v=>v.lang.startsWith("lt")&&v.name.toLowerCase().includes("female"))
-        || voices.find(v=>v.lang.startsWith("lt"))
-        || voices.find(v=>v.name.toLowerCase().includes("female")&&v.lang.startsWith("en"))
-        || voices[0];
-      if(female) msg.voice = female;
-      setTimeout(()=>window.speechSynthesis.speak(msg), 400);
-    };
-    // Voices load async on some browsers
-    if(window.speechSynthesis?.getVoices().length>0){
-      speak();
-    } else {
-      window.speechSynthesis?.addEventListener("voiceschanged", speak, {once:true});
-    }
+    // Voice greeting — real MP3
+    const audio = new Audio("/welcome.mp3");
+    audio.volume = 0.9;
+    setTimeout(()=>{ audio.play().catch(()=>{}); }, 400);
     return ()=>clearTimeout(timer);
   },[]);
 
