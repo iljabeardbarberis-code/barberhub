@@ -3116,7 +3116,12 @@ export default function App() {
                   const d=m.discount;
                   const label=lang==="ru"?d.label_ru:d.label_lt;
                   return(
-                    <div key={m.id} className="disc-banner" style={{background:`linear-gradient(135deg,${m.color},${m.color}99)`}} onClick={goBook}>
+                    <div key={m.id} className="disc-banner" style={{background:`linear-gradient(135deg,${m.color},${m.color}99)`}} onClick={()=>{
+                      // Preselect this master and discounted services
+                      const discSvcIds = d.serviceIds?.length>0 ? d.serviceIds : (m.services||[]).filter(s=>s.enabled).map(s=>s.id);
+                      setBk(b=>({...b, master:m.id, services:discSvcIds}));
+                      goBook();
+                    }}>
                       <div style={{position:"absolute",right:-8,top:-8,fontFamily:"'Bebas Neue',sans-serif",fontSize:110,color:"rgba(255,255,255,.08)",lineHeight:1,pointerEvents:"none"}}>%</div>
                       <div className="disc-badge-pill">{t.discount_badge}</div>
                       <div className="disc-pct">−{d.percent}%</div>
