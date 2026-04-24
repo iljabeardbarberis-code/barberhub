@@ -3126,9 +3126,11 @@ export default function App() {
                         <span>{m.firstName} {m.lastName}</span>
                         <span style={{opacity:.7}}>· {lang==="ru"?m.role_ru:m.role_lt}</span>
                       </div>
-                      {/* Price examples */}
+                      {/* Price examples - only show services with discount */}
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                        {(m.services||[]).filter(s=>s.enabled).slice(0,3).map(s=>{
+                        {(m.services||[]).filter(s=>s.enabled&&(
+                          !d.serviceIds?.length || d.serviceIds.includes(s.id)
+                        )).slice(0,3).map(s=>{
                           const orig=Number(s.price);
                           const disc=Math.round(orig*(1-d.percent/100));
                           return(
@@ -3444,7 +3446,12 @@ export default function App() {
               const origPrice=selSvcs.reduce((s,x)=>s+Number(x.price),0);
               const ttlMins=selSvcs.reduce((s,x)=>s+Number(x.mins),0);
               const ttlClean=selSvcs.reduce((s,x)=>s+Number(x.cleanup||0),0);
-              const finalPrice=disc?Math.round(origPrice*(1-disc.percent/100)):origPrice;
+              // Apply discount only to selected services (or all if no serviceIds specified)
+              const discServiceIds = disc?.serviceIds||[];
+              const finalPrice = disc ? selSvcs.reduce((sum,s)=>{
+                const applies = discServiceIds.length===0 || discServiceIds.includes(s.id);
+                return sum + (applies ? Math.round(Number(s.price)*(1-disc.percent/100)) : Number(s.price));
+              },0) : origPrice;
               const saving=origPrice-finalPrice;
               return(
                 <div className="sumbox">
