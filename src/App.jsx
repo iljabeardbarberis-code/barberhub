@@ -815,11 +815,11 @@ const CSS = `
 }
 body{background:var(--bg);color:var(--wh);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
 /* Splash screen */
-@keyframes splashFade{0%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.05)}}
+@keyframes splashFade{0%{opacity:1;transform:scale(1)}85%{opacity:1;transform:scale(1.01)}100%{opacity:0;transform:scale(1.04)}}
 @keyframes splashLogo{0%{opacity:0;transform:translateY(20px)}50%{opacity:1;transform:translateY(0)}100%{opacity:1;transform:translateY(0)}}
 @keyframes splashLine{0%{width:0}100%{width:120px}}
 @keyframes splashPulse{0%,100%{opacity:.4}50%{opacity:1}}
-.splash{position:fixed;inset:0;background:#0e0a06;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:splashFade .6s ease forwards;}
+.splash{position:fixed;inset:0;background:#0e0a06;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:splashFade 1s ease forwards;}
 .splash-logo{font-family:"Bebas Neue",sans-serif;font-size:52px;letter-spacing:6px;color:#e8650a;animation:splashLogo .8s ease forwards;text-align:center;line-height:1.1;}
 .splash-sub{font-family:"Syne",sans-serif;font-size:13px;letter-spacing:4px;color:rgba(255,255,255,.5);text-transform:uppercase;animation:splashLogo 1s .2s ease both;}
 .splash-line{height:2px;background:linear-gradient(90deg,transparent,#e8650a,transparent);animation:splashLine 1s .3s ease both;border-radius:2px;}
@@ -1826,7 +1826,7 @@ export default function App() {
 
   useEffect(()=>{
     // Hide splash after 2.8s
-    const timer = setTimeout(()=>setShowSplash(false), 2800);
+    const timer = setTimeout(()=>setShowSplash(false), 2500);
     // Voice greeting — real MP3
     const audio = new Audio("/welcome.mp3");
     audio.volume = 0.9;
